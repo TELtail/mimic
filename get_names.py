@@ -16,10 +16,20 @@ def get_need_name(names_path):
         names.append(name)
     return names
 
+def sort_name(names,delete_num):
+    names = [int(i) for i in names ]
+    names = sorted(names)
+    names = [str(i) for i in names if delete_num < i]
+    return names
+
 def main():
     names_path = "./data/MAP-CW.txt"
+    delete_num = 3100000
+
     names = get_need_name(names_path)
-    with open("names.bin","wb") as p:
+    names = sort_name(names,delete_num)
+    print(names)
+    with open("names_mini.bin","wb") as p:
         pickle.dump(names,p)
 
 

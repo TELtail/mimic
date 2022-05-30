@@ -8,7 +8,7 @@ import os
 
 
 
-def get_data(driver,element,names):
+def get_data(driver,element,names,save_dir):
     element.click()
     file_elements = driver.find_elements_by_xpath("/html/body/pre/a")
     for file_element in file_elements:
@@ -22,15 +22,18 @@ def get_data(driver,element,names):
                 link_dat = driver.find_element_by_link_text(num_dat)
                 link_dat.click() #datファイルダウンロード
                 link_hea = driver.find_element_by_link_text(num_hea).get_attribute("href")
-                urllib.request.urlretrieve(link_hea,"./data/mimic-II/"+num_hea) #heaファイルダウンロード
+                urllib.request.urlretrieve(link_hea,"."+save_dir+"/"+num_hea) #heaファイルダウンロード
             except:
                 pass
             driver.back() #前の画面に戻る
 
 
-def scraping(names):
+def scraping(names,save_dir):
+    
     options = webdriver.ChromeOptions()
-    options.add_experimental_option("prefs", {"download.default_directory":os.getcwd()+ "\data\mimic-II" }) #ダウンロード先を変更
+    options.add_experimental_option("prefs", {"download.default_directory":os.getcwd()+ save_dir }) #ダウンロード先を変更
+    options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    options.use_chromium = True
 
     driver = webdriver.Chrome(executable_path='./driver/chromedriver.exe',chrome_options=options)
     driver.get('https://archive.physionet.org/physiobank/database/mimic2wdb') #MIMIC-IIのサイトを指定
@@ -41,7 +44,7 @@ def scraping(names):
     for element in elements:
         xpath = element.get_attribute("href")
         if xpath.split("/")[-2] in num_list: #必要なディレクトリ群のXPATHを取得したら
-            get_data(driver,element,names) #データダウンロード
+            get_data(driver,element,names,save_dir) #データダウンロード
             driver.back() 
 
 def load_names(names_path):
@@ -51,9 +54,10 @@ def load_names(names_path):
     return names
 
 def main():
-    names_path = "./data/names.bin" #必要な患者番号が書かれたファイルのpath
+    names_path = "./data/names_mini.bin" #必要な患者番号が書かれたファイルのpath
+    save_dir = "\data\mimic-II"
     names = load_names(names_path) 
-    scraping(names)
+    scraping(names,save_dir)
 
 if __name__ == "__main__":
     main()
