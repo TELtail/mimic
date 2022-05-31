@@ -1,4 +1,3 @@
-import collections
 import torch
 import torch.nn as nn
 from IPython.display import display
@@ -19,7 +18,7 @@ class Net(nn.Module):
 
 
 
-def mk_dataset(dataset_path):
+def mk_data_pickle(dataset_path):
     data = {}
 
     file_paths = glob.glob(dataset_path+"/*.hea")
@@ -30,13 +29,33 @@ def mk_dataset(dataset_path):
     
     with open("data.bin","wb") as f:
         pickle.dump(data,f)
+
+
+def mk_dataset(data_pickle_path,age_pickle_path):
+    merged_data = {}
+
+    with open(data_pickle_path,"rb") as f:
+        data = pickle.load(f)
+    with open(age_pickle_path,"rb") as g:
+        age_map = pickle.load(g)
     
+    for key,value in data.items():
+        merged_data[key] = {}
+        merged_data[key]["age"] = age_map[key]
+        merged_data[key]["signals"] = value[0]
+        merged_data[key]["fields"] = value[1]
+    
+
+    
+
 
 
 def main():
+    data_pickle_path = "./data/data.bin"
+    age_pickle_path = "./data/age_data.bin"
+
+    mk_dataset(data_pickle_path,age_pickle_path)
     
-    dataset_path = "data\mimic-II"
-    #mk_dataset(dataset_path)
 
 if __name__ == "__main__":
     main()
