@@ -6,6 +6,7 @@ import numpy as np
 import glob
 import os
 import pickle
+import matplotlib.pyplot as plt
 
 class Net(nn.Module):
     def __init__(self):
@@ -45,9 +46,29 @@ def mk_dataset(data_pickle_path,age_pickle_path):
         merged_data[key]["signals"] = value[0]
         merged_data[key]["fields"] = value[1]
     
+    verificate_elements(merged_data)
 
-    
 
+def verificate_elements(merged_data):
+    aggregate_results = {}
+    for key,value in merged_data.items():
+        for da in value["fields"]["sig_name"]:
+            if da not in aggregate_results.keys():
+                aggregate_results[da] = 0
+            aggregate_results[da]+=1
+    print(len(merged_data))
+    print(aggregate_results)
+
+    def plot_bar():
+        sorted_results = sorted(aggregate_results.items(),key=lambda x:x[1],reverse=True)
+        x = []
+        y = []
+        for a in sorted_results:
+            x.append(a[0])
+            y.append(a[1])
+        plt.bar(x,y)
+        plt.show()
+    plot_bar()
 
 
 def main():
