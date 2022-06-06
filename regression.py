@@ -1,11 +1,19 @@
 import torch
 import torch.nn as nn
 from IPython.display import display
+from sklearn.model_selection import train_test_split
 import wfdb
 import numpy as np
 import glob
 import os
 import pickle
+SEED = 42
+
+def define_seed():
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    torch.backends.cudnn.deterministic = True
 
 class Net(nn.Module):
     def __init__(self):
@@ -56,7 +64,7 @@ def extractioning_signals(merged_data,need_elements_list):
     return data_signlas_age
 
 
-def mk_dataset(data_pickle_path,age_pickle_path):
+def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size):
     need_elements_list = ['HR', 'RESP', 'SpO2', 'NBPSys', 'NBPDias', 'NBPMean']
     min_length = 300
 
@@ -65,29 +73,44 @@ def mk_dataset(data_pickle_path,age_pickle_path):
     with open(age_pickle_path,"rb") as g:
         age_map = pickle.load(g) #年齢の対応データ
     
-    merged_data = merging_data(data,age_map,need_elements_list)
-    data_signals_age = extractioning_signals(merged_data,need_elements_list)
+    merged_data = merging_data(data,age_map,need_elements_list) #信号と年齢データを対応付ける
+    data_signals_age = extractioning_signals(merged_data,need_elements_list) #必要なデータだけ取得
 
-    data_x = []
-    data_t = []
+    data_x = [] #信号
+    data_t = [] #年齢(ラベル)
 
     for key,one_data in data_signals_age.items():
-        if np.array(one_data["signals"]).shape[0] < min_length:
+        if np.array(one_data["signals"]).shape[0] < min_length: #短すぎるデータは削除
             continue
-        tmp = np.array(one_data["signals"],dtype=np.float64)
-        print(tmp.shape)
+        tmp = torch.tensor(np.array(one_data["signals"],dtype=np.float64)) 
         data_x.append(tmp)
         data_t.append(one_data["age"])
-    data_x = torch.tensor(np.array(data_x,dtype=np.float64))
+        print(tmp.size())
+
+    data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     data_t = torch.tensor(np.array(data_t))
+    train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
+
+    dataset = torch.utils.data.TensorDataset(data_x,data_t)
+
+    traindataset = torch.torch.utils.data.Subset(dataset,train_indices) #取得したindexをもとに新たにdatasetを作成
+    testdataset = torch.torch.utils.data.Subset(dataset,test_indices) #取得したindexをもとに新たにdatasetを作成
+    trainloader = torch.utils.data.DataLoader(traindataset,batch_size=batch_size)
+    testloader  = torch.utils.data.DataLoader(testdataset,batch_size=batch_size)
+
+    return trainloader,testloader
 
 
 
 def main():
     data_pickle_path = "./data/data.bin"
     age_pickle_path = "./data/age_data.bin"
+    train_rate = 0.8
+    batch_size = 32
 
-    mk_dataset(data_pickle_path,age_pickle_path)
+    define_seed()
+    trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size)
+
     
 
 if __name__ == "__main__":
