@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from IPython.display import display
+import scipy
 from sklearn.model_selection import train_test_split
 import wfdb
 import numpy as np
@@ -16,11 +17,17 @@ def define_seed():
     torch.backends.cudnn.deterministic = True
 
 class Net(nn.Module):
-    def __init__(self):
+    def __init__(self,num_axis,hidden_dim):
         super(Net,self).__init__()
+        self.hidden_dim = hidden_dim
+        self.lstm = nn.LSTM(num_axis,hidden_dim,3,batch_first=True)
+        self.fc = nn.Linear(hidden_dim,1)
 
         
     def forward(self,x):
+        _,x = self.lstm(x)
+        x = x[0][-1].view(-1, self.hidden_dim)
+        x = self.fc(x)
         
         return x
 
@@ -64,9 +71,8 @@ def extractioning_signals(merged_data,need_elements_list):
     return data_signlas_age
 
 
-def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size):
-    need_elements_list = ['HR', 'RESP', 'SpO2', 'NBPSys', 'NBPDias', 'NBPMean']
-    min_length = 300
+def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length):
+
 
     with open(data_pickle_path,"rb") as f:
         data = pickle.load(f) #信号データ
@@ -80,12 +86,12 @@ def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size):
     data_t = [] #年齢(ラベル)
 
     for key,one_data in data_signals_age.items():
-        if np.array(one_data["signals"]).shape[0] < min_length: #短すぎるデータは削除
+        if np.array(one_data["signals"]).shape[0] < minimum_signal_length: #短すぎるデータは削除
             continue
-        tmp = torch.tensor(np.array(one_data["signals"],dtype=np.float64)) 
+        tmp = np.array(one_data["signals"],dtype=np.float64)
+        tmp = torch.tensor(tmp) 
         data_x.append(tmp)
         data_t.append(one_data["age"])
-        print(tmp.size())
 
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     data_t = torch.tensor(np.array(data_t))
@@ -100,6 +106,37 @@ def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size):
 
     return trainloader,testloader
 
+def train_method(trainloader,net,optimizer,loss_fn,device):
+    running_loss = 0
+    size = len(trainloader.dataset)
+    for i,(inputs,labels) in enumerate(trainloader):
+        optimizer.zero_grad() #勾配初期化
+        inputs,labels = inputs.to(device),labels.to(device)
+        outputs = net(inputs)
+        loss = loss_fn(outputs,labels)
+        running_loss += loss.item()
+        loss.backward()
+        optimizer.step()
+    
+    running_loss /= size
+    print(f"train_loss:{running_loss}")
+
+    return running_loss
+
+def test_method(testloader,net,optimizer,loss_fn,device):
+    running_loss = 0
+    size = len(testloader.dataset)
+    for inputs,labels in testloader:
+        inputs,labels = inputs.to(device),labels.to(device)
+        outputs = net(inputs)
+        loss = loss_fn(outputs,labels)
+        running_loss += loss.item()
+    
+    running_loss /= size
+    print(f"test_loss:{running_loss}")
+
+    return running_loss
+
 
 
 def main():
@@ -107,9 +144,27 @@ def main():
     age_pickle_path = "./data/age_data.bin"
     train_rate = 0.8
     batch_size = 32
+    hidden_dim = 64
+    epochs = 100
+    lr = 1e-3
+    need_elements_list = ['HR', 'RESP', 'SpO2', 'NBPSys', 'NBPDias', 'NBPMean']
+    minimum_signal_length = 300
 
-    define_seed()
-    trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    define_seed() #seed固定
+    trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length) #データローダー取得
+    num_axis = len(need_elements_list)
+    net = Net(num_axis,hidden_dim).to(device)
+
+    optimizer = torch.optim.Adam(net.parameters(),lr=lr)
+    loss_fn = nn.CrossEntropyLoss()
+    epoch_loss = []
+    for epoch in range(epochs):
+        print(f"----- epoch:{epoch+1} ---------------------------")
+        train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device)
+        test_running_loss = test_method(testloader,net,optimizer,loss_fn,device)
+        epoch_loss.append([train_running_loss,test_running_loss])
+        
 
     
 
