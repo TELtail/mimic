@@ -150,7 +150,7 @@ def main():
     hidden_dim = 64
     epochs = 100
     lr = 1e-3
-    need_elements_list = ['HR', 'RESP', 'SpO2', 'NBPSys', 'NBPDias', 'NBPMean']
+    need_elements_list = ['HR', 'RESP', 'SpO2']
     minimum_signal_length = 300
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
