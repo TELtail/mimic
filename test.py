@@ -3,14 +3,14 @@ import wfdb
 import numpy as np
 
 
-signals,fields = wfdb.rdsamp("./data/3009959n")
+signals,fields = wfdb.rdsamp("./data\mimic-II/3000105n")
 print(fields)
 display(signals)
 non_num = np.count_nonzero(np.isnan(signals))
 element_num = np.count_nonzero(~np.isnan(signals))
 print(non_num,element_num)
 
-record = wfdb.rdrecord("./data/3009959n",channels=[0,1,2])
+record = wfdb.rdrecord("./data\mimic-II/3000105n",channels=[0,9,10])
 wfdb.plot_wfdb(record=record,title="Record")
 
 

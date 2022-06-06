@@ -71,7 +71,7 @@ def extractioning_signals(merged_data,need_elements_list):
     return data_signlas_age
 
 
-def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length):
+def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length):
 
 
     with open(data_pickle_path,"rb") as f:
@@ -88,7 +88,7 @@ def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_eleme
     for key,one_data in data_signals_age.items():
         if np.array(one_data["signals"]).shape[0] < minimum_signal_length: #短すぎるデータは削除
             continue
-        tmp = np.array(one_data["signals"],dtype=np.float32)
+        tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length]
         tmp = np.nan_to_num(tmp,nan=0) #nanを0で置換
         tmp = torch.tensor(tmp) 
         data_x.append(tmp)
@@ -152,11 +152,11 @@ def main():
     lr = 1e-3
     need_elements_list = ['HR', 'RESP', 'SpO2']
     minimum_signal_length = 300
-    miximum_signal_length = 1500
+    maximum_signal_length = 1500
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     define_seed() #seed固定
-    trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length) #データローダー取得
+    trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length) #データローダー取得
     num_axis = len(need_elements_list)
     net = Net(num_axis,hidden_dim).to(device)
 
