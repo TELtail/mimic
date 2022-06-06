@@ -58,6 +58,7 @@ def extractioning_signals(merged_data,need_elements_list):
 
 def mk_dataset(data_pickle_path,age_pickle_path):
     need_elements_list = ['HR', 'RESP', 'SpO2', 'NBPSys', 'NBPDias', 'NBPMean']
+    min_length = 300
 
     with open(data_pickle_path,"rb") as f:
         data = pickle.load(f) #信号データ
@@ -66,7 +67,19 @@ def mk_dataset(data_pickle_path,age_pickle_path):
     
     merged_data = merging_data(data,age_map,need_elements_list)
     data_signals_age = extractioning_signals(merged_data,need_elements_list)
-    print(data_signals_age)
+
+    data_x = []
+    data_t = []
+
+    for key,one_data in data_signals_age.items():
+        if np.array(one_data["signals"]).shape[0] < min_length:
+            continue
+        tmp = np.array(one_data["signals"],dtype=np.float64)
+        print(tmp.shape)
+        data_x.append(tmp)
+        data_t.append(one_data["age"])
+    data_x = torch.tensor(np.array(data_x,dtype=np.float64))
+    data_t = torch.tensor(np.array(data_t))
 
 
 
