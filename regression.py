@@ -152,6 +152,7 @@ def main():
     lr = 1e-3
     need_elements_list = ['HR', 'RESP', 'SpO2']
     minimum_signal_length = 300
+    miximum_signal_length = 1500
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     define_seed() #seed固定
