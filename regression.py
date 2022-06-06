@@ -121,7 +121,7 @@ def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
         if i%10 == 0:
             print(f" {i}/{int(size/batch_size)} loss:{loss}")
     
-    running_loss /= size
+    running_loss /= (i+1)
     print(f"train_loss:{running_loss}")
 
     return running_loss
@@ -129,13 +129,13 @@ def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
 def test_method(testloader,net,optimizer,loss_fn,device):
     running_loss = 0
     size = len(testloader.dataset)
-    for inputs,labels in testloader:
+    for i,(inputs,labels) in enumerate(testloader):
         inputs,labels = inputs.to(device),labels.to(device)
         outputs = net(inputs)
         loss = loss_fn(outputs,labels.float())
         running_loss += loss.item()
     
-    running_loss /= size
+    running_loss /= (i+1)
     print(f"test_loss:{running_loss}")
 
     return running_loss
