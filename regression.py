@@ -10,6 +10,7 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 import datetime
+import shutil
 SEED = 42
 
 def define_seed():
@@ -198,9 +199,10 @@ def main():
             epoch_loss.append([train_running_loss,test_running_loss])
     except:
         pass
-    
-    if len(epoch_loss) != 0:
-        plot_loss_glaph(epoch_loss,out_path)
+    plot_loss_glaph(epoch_loss,out_path)
+    if len(epoch_loss) == 0:
+        shutil.rmtree(out_path)
+        
 
     
 
