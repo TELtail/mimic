@@ -51,8 +51,10 @@ def mk_dataset(data_pickle_path,age_pickle_path,need_elements_list,minimum_signa
 
     plt.figure(figsize=(16,8))
     plt.rcParams["font.size"] = 30
-    plt.title("Percentage of nan in SpO2")
+    plt.xlabel("Percentage of nan in HR")
+    plt.ylabel("The number of signals")
     plt.hist(nan_percents,bins=500)
+    plt.tight_layout()
     plt.show()
 
     
@@ -63,7 +65,7 @@ def check_nan_num(data_ndarray,need_elements_list):
         columns=need_elements_list
     )
 
-    nan_percent = (data_df.isnull().sum()["RESP"]) / len(data_df)
+    nan_percent = (data_df.isnull().sum()["HR"]) / len(data_df)
 
     return nan_percent
 
