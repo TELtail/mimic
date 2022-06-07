@@ -39,7 +39,7 @@ def main_worker(age_path):
 
 
     with open("age_data.json","w") as f:
-        json.dump(age_data_plus_delete_info,f)
+        json.dump(age_data_plus_delete_info,f,indent=4)
     
 
 
