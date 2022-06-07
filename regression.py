@@ -154,11 +154,18 @@ def main():
     minimum_signal_length = 300
     maximum_signal_length = 1500
 
+
     device = "cuda" if torch.cuda.is_available() else "cpu"
     define_seed() #seed固定
     trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length) #データローダー取得
     num_axis = len(need_elements_list)
     net = Net(num_axis,hidden_dim).to(device)
+
+    print(net)
+    print("minimum_signal_lengt:",minimum_signal_length,"maximum_signal_length:",maximum_signal_length)
+    print("batch_size:",batch_size)
+    print("hidden_dim:",hidden_dim)
+    print("lr:",lr)
 
 
     optimizer = torch.optim.Adam(net.parameters(),lr=lr)
