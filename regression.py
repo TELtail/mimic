@@ -1,3 +1,5 @@
+from ast import arg
+from cProfile import label
 import torch
 import torch.nn as nn
 from IPython.display import display
@@ -11,6 +13,7 @@ import pickle
 import matplotlib.pyplot as plt
 import datetime
 import shutil
+import argparse
 SEED = 42
 
 def define_seed():
@@ -151,25 +154,52 @@ def mk_out_dir(out_path):
     return out_path
 
 def plot_loss_glaph(epoch_loss,out_path):
+    labels = ["train","test"]
     epoch_loss = np.array(epoch_loss) #スライスできるようにndarrayに変更
     for i in range(2): #学習データとテストデータのlossだから2
-        plt.plot(range(len(epoch_loss)),epoch_loss[:,i])
+        plt.plot(range(len(epoch_loss)),epoch_loss[:,i],label=labels[i])
     png_path = os.path.join(out_path,"loss.png")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.rcParams["font.size"] = 20
+    plt.tight_layout()
+    plt.legend()
     plt.savefig(png_path)
+
+def get_parser():
+    parser = argparse.ArgumentParser("MIMIC-IIデータセットで年齢の学習、推論を行うプログラム")
+    parser.add_argument("--data_path",help="信号のバイナリデータのパス")
+    parser.add_argument("--age_path",help="年齢のバイナリデータのパス")
+    parser.add_argument("--out_path",help="グラフ等を出力するパス",defalut="./out")
+    parser.add_argument("--train_rate",help="学習データの割合",type=float,defalut=0.8)
+    parser.add_argument("--batch_size",help="バッチサイズ",type=int,defalut=8)
+    parser.add_argument("--hidden_dim",help="LSTMの次元",type=int,default=64)
+    parser.add_argument("--epochs",help="epoch数",type=int,default=100)
+    parser.add_argument("--lr",help="学習率",type=float,default=1e-3)
+    parser.add_argument("--min",help="最小の信号の長さ",type=int,default=300)
+    parser.add_argument("--max",help="最大の信号の長さ",type=int,default=1500)
+
+    args = parser.parse_args()
+
+    data_pickle_path = args.data_path
+    age_pickle_path = args.age_path
+    out_path = args.out_path
+    train_rate = args.train_rate
+    batch_size = args.batch_size
+    hidden_dim = args.hidden_dim
+    epochs = args.epochs
+    lr = args.lr
+    minimum_signal_length = args.min
+    maximum_signal_length = args.max
+
+    return data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length
 
 
 def main():
-    data_pickle_path = "./data/data.bin"
-    age_pickle_path = "./data/age_data.bin"
-    out_path = "./out"
-    train_rate = 0.8
-    batch_size = 8
-    hidden_dim = 64
-    epochs = 100
-    lr = 1e-3
     need_elements_list = ['HR', 'RESP', 'SpO2']
-    minimum_signal_length = 300
-    maximum_signal_length = 1500
+
+    data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length = get_parser()
+
 
     out_path = mk_out_dir(out_path)
 
