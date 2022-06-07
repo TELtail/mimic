@@ -1,13 +1,4 @@
-from h11 import Data
-import torch
-import torch.nn as nn
-from IPython.display import display
-import scipy
-from sklearn.model_selection import train_test_split
-import wfdb
 import numpy as np
-import glob
-import os
 import pickle
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -39,7 +30,7 @@ def extractioning_signals(merged_data,need_elements_list):
     return data_signlas_age
 
 
-def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length):
+def mk_dataset(data_pickle_path,age_pickle_path,need_elements_list,minimum_signal_length):
 
 
     with open(data_pickle_path,"rb") as f:
@@ -50,8 +41,6 @@ def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_eleme
     merged_data = merging_data(data,age_map,need_elements_list) #信号と年齢データを対応付ける
     data_signals_age = extractioning_signals(merged_data,need_elements_list) #必要なデータだけ取得
 
-    data_x = [] #信号
-    data_t = [] #年齢(ラベル)
     nan_percents = []
     for key,one_data in data_signals_age.items():
         if np.array(one_data["signals"]).shape[0] < minimum_signal_length: #短すぎるデータは削除
@@ -61,7 +50,8 @@ def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_eleme
         nan_percents.append(nan_percent)
 
     plt.figure(figsize=(16,8))
-    plt.title("Percentage of nan in NBP")
+    plt.rcParams["font.size"] = 30
+    plt.title("Percentage of nan in SpO2")
     plt.hist(nan_percents,bins=500)
     plt.show()
 
@@ -73,23 +63,17 @@ def check_nan_num(data_ndarray,need_elements_list):
         columns=need_elements_list
     )
 
-    nan_percent = (data_df.isnull().sum()["NBPSys"]) / len(data_df)
+    nan_percent = (data_df.isnull().sum()["RESP"]) / len(data_df)
 
     return nan_percent
-
-
-
-
 
 def main():
     data_pickle_path = "./data/data.bin"
     age_pickle_path = "./data/age_data.bin"
-    train_rate = 0.8
-    batch_size = 8
     need_elements_list = ['HR', 'RESP', 'SpO2', 'NBPSys', 'NBPDias', 'NBPMean']
     minimum_signal_length = 300
 
-    mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length) #データローダー取得
+    mk_dataset(data_pickle_path,age_pickle_path,need_elements_list,minimum_signal_length) #データローダー取得
 
 
     
