@@ -170,14 +170,15 @@ def get_parser():
     parser = argparse.ArgumentParser("MIMIC-IIデータセットで年齢の学習、推論を行うプログラム")
     parser.add_argument("--data_path",help="信号のバイナリデータのパス")
     parser.add_argument("--age_path",help="年齢のバイナリデータのパス")
-    parser.add_argument("--out_path",help="グラフ等を出力するパス",defalut="./out")
-    parser.add_argument("--train_rate",help="学習データの割合",type=float,defalut=0.8)
-    parser.add_argument("--batch_size",help="バッチサイズ",type=int,defalut=8)
+    parser.add_argument("--out_path",help="グラフ等を出力するパス",default="./out")
+    parser.add_argument("--train_rate",help="学習データの割合",type=float,default=0.8)
+    parser.add_argument("--batch_size",help="バッチサイズ",type=int,default=8)
     parser.add_argument("--hidden_dim",help="LSTMの次元",type=int,default=64)
     parser.add_argument("--epochs",help="epoch数",type=int,default=100)
     parser.add_argument("--lr",help="学習率",type=float,default=1e-3)
     parser.add_argument("--min",help="最小の信号の長さ",type=int,default=300)
     parser.add_argument("--max",help="最大の信号の長さ",type=int,default=1500)
+    parser.add_argument("--need_elements",help="必要な要素名",nargs="*",default=['HR', 'RESP', 'SpO2'])
 
     args = parser.parse_args()
 
@@ -191,31 +192,40 @@ def get_parser():
     lr = args.lr
     minimum_signal_length = args.min
     maximum_signal_length = args.max
+    need_elements_list = args.need_elements
 
-    return data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length
+    return data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list
 
+def print_parser(data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list):
+    print("---------------------------------")
+    print("data_pickle_path:{}".format(data_pickle_path))
+    print("age_pickle_path:{}".format(age_pickle_path))
+    print("out_path:{}".format(out_path))
+    print("train_rate:{}".format(train_rate))
+    print("batch_size:{}".format(batch_size))
+    print("hidden_dim:{}".format(hidden_dim))
+    print("epochs:{}".format(epochs))
+    print("lr:{}".format(lr))
+    print("minimum_signal_length:{}".format(minimum_signal_length))
+    print("maximum_signal_length:{}".format(maximum_signal_length))
+    print("need_elements_list:{}".format(need_elements_list))
+    print("---------------------------------")
 
 def main():
-    need_elements_list = ['HR', 'RESP', 'SpO2']
-
-    data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length = get_parser()
-
-
-    out_path = mk_out_dir(out_path)
-
-
+    data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list = get_parser()
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    out_path = mk_out_dir(out_path)
+    print("Device:{}".format(device))
+
+
+    print_parser(data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list)
+
+    
     define_seed() #seed固定
     trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length) #データローダー取得
     num_axis = len(need_elements_list)
     net = Net(num_axis,hidden_dim).to(device)
-
     print(net)
-    print("minimum_signal_lengt:",minimum_signal_length,"maximum_signal_length:",maximum_signal_length)
-    print("batch_size:",batch_size)
-    print("hidden_dim:",hidden_dim)
-    print("lr:",lr)
-    print("device:",device)
 
 
     optimizer = torch.optim.Adam(net.parameters(),lr=lr)
@@ -227,14 +237,13 @@ def main():
             train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
             test_running_loss = test_method(testloader,net,optimizer,loss_fn,device)
             epoch_loss.append([train_running_loss,test_running_loss])
-    except:
+    except KeyboardInterrupt:
         pass
-    plot_loss_glaph(epoch_loss,out_path)
-    if len(epoch_loss) == 0:
+    if len(epoch_loss) != 0:
+        plot_loss_glaph(epoch_loss,out_path)
+    else:
         shutil.rmtree(out_path)
-        
 
-    
 
 if __name__ == "__main__":
     main()
