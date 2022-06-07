@@ -2,5 +2,5 @@ data
 wfdb-python
 out
 start.sh
-log
+ssh_log
 shortcut
