@@ -1,5 +1,3 @@
-from ast import arg
-from cProfile import label
 import torch
 import torch.nn as nn
 from IPython.display import display
@@ -14,6 +12,8 @@ import matplotlib.pyplot as plt
 import datetime
 import shutil
 import argparse
+from logging import getLogger,config
+import json
 SEED = 42
 
 def define_seed():
@@ -125,10 +125,10 @@ def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
         loss.backward()
         optimizer.step()
         if i%10 == 0:
-            print(f" {i}/{int(size/batch_size)} loss:{loss}")
+            logger.info(f" {i}/{int(size/batch_size)} loss:{loss}")
     
     running_loss /= (i+1)
-    print(f"train_loss:{running_loss}")
+    logger.info(f"train_loss:{running_loss}")
 
     return running_loss
 
@@ -142,7 +142,7 @@ def test_method(testloader,net,optimizer,loss_fn,device):
         running_loss += loss.item()
     
     running_loss /= (i+1)
-    print(f"test_loss:{running_loss}")
+    logger.info(f"test_loss:{running_loss}")
 
     return running_loss
 
@@ -166,6 +166,16 @@ def plot_loss_glaph(epoch_loss,out_path):
     plt.legend()
     plt.savefig(png_path)
 
+def log_start(out_path,config_path):
+    log_path = os.path.join(out_path,"log.txt")
+    with open(config_path,"r") as f:
+        log_conf = json.load(f)
+    log_conf["handlers"]["fileHandler"]["filename"] = os.path.join(out_path,"train_log.txt") #出力ログのpathを指定
+    config.dictConfig(log_conf)
+
+    global logger #loggerをグローバル変数として定義
+    logger = getLogger(__name__)
+
 def get_parser():
     parser = argparse.ArgumentParser("MIMIC-IIデータセットで年齢の学習、推論を行うプログラム")
     parser.add_argument("--data_path",help="信号のバイナリデータのパス")
@@ -179,6 +189,7 @@ def get_parser():
     parser.add_argument("--min",help="最小の信号の長さ",type=int,default=300)
     parser.add_argument("--max",help="最大の信号の長さ",type=int,default=1500)
     parser.add_argument("--need_elements",help="必要な要素名",nargs="*",default=['HR', 'RESP', 'SpO2'])
+    parser.add_argument("--config",help="log_config.jsonのpath指定",default="./log_config.json")
 
     args = parser.parse_args()
 
@@ -193,29 +204,33 @@ def get_parser():
     minimum_signal_length = args.min
     maximum_signal_length = args.max
     need_elements_list = args.need_elements
+    config_path = args.config
 
-    return data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list
+
+    return data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path
 
 def print_parser(data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list):
-    print("---------------------------------")
-    print("data_pickle_path:{}".format(data_pickle_path))
-    print("age_pickle_path:{}".format(age_pickle_path))
-    print("out_path:{}".format(out_path))
-    print("train_rate:{}".format(train_rate))
-    print("batch_size:{}".format(batch_size))
-    print("hidden_dim:{}".format(hidden_dim))
-    print("epochs:{}".format(epochs))
-    print("lr:{}".format(lr))
-    print("minimum_signal_length:{}".format(minimum_signal_length))
-    print("maximum_signal_length:{}".format(maximum_signal_length))
-    print("need_elements_list:{}".format(need_elements_list))
-    print("---------------------------------")
+    logger.info("---------------------------------")
+    logger.info("data_pickle_path:{}".format(data_pickle_path))
+    logger.info("age_pickle_path:{}".format(age_pickle_path))
+    logger.info("out_path:{}".format(out_path))
+    logger.info("train_rate:{}".format(train_rate))
+    logger.info("batch_size:{}".format(batch_size))
+    logger.info("hidden_dim:{}".format(hidden_dim))
+    logger.info("epochs:{}".format(epochs))
+    logger.info("lr:{}".format(lr))
+    logger.info("minimum_signal_length:{}".format(minimum_signal_length))
+    logger.info("maximum_signal_length:{}".format(maximum_signal_length))
+    logger.info("need_elements_list:{}".format(need_elements_list))
+    logger.info("---------------------------------")
 
 def main():
-    data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list = get_parser()
+    data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path = get_parser()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     out_path = mk_out_dir(out_path)
-    print("Device:{}".format(device))
+    log_start(out_path,config_path)
+
+    logger.info("Device:{}".format(device))
 
 
     print_parser(data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list)
@@ -225,7 +240,7 @@ def main():
     trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length) #データローダー取得
     num_axis = len(need_elements_list)
     net = Net(num_axis,hidden_dim).to(device)
-    print(net)
+    logger.info(net)
 
 
     optimizer = torch.optim.Adam(net.parameters(),lr=lr)
@@ -233,7 +248,7 @@ def main():
     epoch_loss = []
     try:
         for epoch in range(epochs):
-            print(f"----- epoch:{epoch+1} ---------------------------")
+            logger.info(f"----- epoch:{epoch+1} ---------------------------")
             train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
             test_running_loss = test_method(testloader,net,optimizer,loss_fn,device)
             epoch_loss.append([train_running_loss,test_running_loss])
