@@ -160,10 +160,13 @@ def plot_age_histogram(data_t,out_path):
     #一様分布、正規分布でのMSEの比較
     uniform = np.random.randint(20,90,len(labels))
     normal = np.random.normal(70,20,len(labels))
+    all = np.full(len(labels),70)
     mse_uniform = mean_squared_error(labels,uniform)
     mse_normal = mean_squared_error(labels,normal)
-    logger.info("Uniform distribution   age U(20,90):{}".format(mse_uniform))
-    logger.info("Normal distribution    age N(70,20^2):{}".format(mse_normal))
+    mse_all = mean_squared_error(labels,all)
+    logger.info("All 70: {}".format(mse_all))
+    logger.info("Uniform distribution   age U(20,90): {}".format(mse_uniform))
+    logger.info("Normal distribution    age N(70,20^2): {}".format(mse_normal))
     logger.info("---------------------------------")
 
 
