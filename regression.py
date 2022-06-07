@@ -3,6 +3,7 @@ import torch.nn as nn
 from IPython.display import display
 import scipy
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 import wfdb
 import numpy as np
 import glob
@@ -111,6 +112,7 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
         data_x.append(tmp)
         data_t.append([one_data["age"]])
 
+    plot_age_histogram(data_t,out_path)
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
@@ -142,6 +144,31 @@ def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num
 
     with open(delete_data_json_path,"w") as f:
         json.dump(delete_data,f,indent=4)
+
+def plot_age_histogram(data_t,out_path):
+    #年齢の分布をプロット
+    labels = np.array(data_t)
+    labels = np.ravel(labels)
+    hist_png_path = os.path.join(out_path,"age_hist.png")
+    plt.figure(figsize=(12,8))
+    plt.hist(labels,bins=70)
+    plt.xlabel("Age")
+    plt.ylabel("Number of people")
+    plt.rcParams["font.size"] = 30
+    plt.savefig(hist_png_path)
+
+    #一様分布、正規分布でのMSEの比較
+    uniform = np.random.randint(20,90,len(labels))
+    normal = np.random.normal(70,20,len(labels))
+    mse_uniform = mean_squared_error(labels,uniform)
+    mse_normal = mean_squared_error(labels,normal)
+    logger.info("Uniform distribution   age U(20,90):{}".format(mse_uniform))
+    logger.info("Normal distribution    age N(70,20^2):{}".format(mse_normal))
+    logger.info("---------------------------------")
+
+
+
+
 
 
 
