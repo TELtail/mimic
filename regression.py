@@ -8,6 +8,8 @@ import numpy as np
 import glob
 import os
 import pickle
+import matplotlib.pyplot as plt
+import datetime
 SEED = 42
 
 def define_seed():
@@ -140,11 +142,25 @@ def test_method(testloader,net,optimizer,loss_fn,device):
 
     return running_loss
 
+def mk_out_dir(out_path):
+    now = datetime.datetime.now() #現在時刻取得
+    now_string = now.strftime("%Y-%m-%d-%H-%M-%S")
+    out_path = os.path.join(out_path,now_string)
+    os.mkdir(out_path) #保存ディレクトリ作成
+    return out_path
+
+def plot_loss_glaph(epoch_loss,out_path):
+    epoch_loss = np.array(epoch_loss) #スライスできるようにndarrayに変更
+    for i in range(2): #学習データとテストデータのlossだから2
+        plt.plot(range(len(epoch_loss)),epoch_loss[:,i])
+    png_path = os.path.join(out_path,"loss.png")
+    plt.savefig(png_path)
 
 
 def main():
     data_pickle_path = "./data/data.bin"
     age_pickle_path = "./data/age_data.bin"
+    out_path = "./out"
     train_rate = 0.8
     batch_size = 8
     hidden_dim = 64
@@ -153,6 +169,8 @@ def main():
     need_elements_list = ['HR', 'RESP', 'SpO2']
     minimum_signal_length = 300
     maximum_signal_length = 1500
+
+    out_path = mk_out_dir(out_path)
 
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -166,17 +184,23 @@ def main():
     print("batch_size:",batch_size)
     print("hidden_dim:",hidden_dim)
     print("lr:",lr)
+    print("device:",device)
 
 
     optimizer = torch.optim.Adam(net.parameters(),lr=lr)
     loss_fn = nn.MSELoss()
     epoch_loss = []
-    for epoch in range(epochs):
-        print(f"----- epoch:{epoch+1} ---------------------------")
-        train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
-        test_running_loss = test_method(testloader,net,optimizer,loss_fn,device)
-        epoch_loss.append([train_running_loss,test_running_loss])
-        
+    try:
+        for epoch in range(epochs):
+            print(f"----- epoch:{epoch+1} ---------------------------")
+            train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
+            test_running_loss = test_method(testloader,net,optimizer,loss_fn,device)
+            epoch_loss.append([train_running_loss,test_running_loss])
+    except:
+        pass
+    
+    if len(epoch_loss) != 0:
+        plot_loss_glaph(epoch_loss,out_path)
 
     
 
