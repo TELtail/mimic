@@ -55,7 +55,7 @@ def merging_data(data,age_map,need_elements_list):
     merged_data = {}
     for key,value in data.items():
         merged_data[key] = {}
-        merged_data[key]["age"] = age_map[key]
+        merged_data[key]["age"] = age_map["data"][key]["age"]
         merged_data[key]["signals"] = value[0]
         merged_data[key]["fields"] = value[1]
         if len(list(set(merged_data[key]["fields"]["sig_name"]) & set(need_elements_list))) != len(need_elements_list): #必要な要素を持っていなかったらデータ削除
@@ -77,13 +77,13 @@ def extractioning_signals(merged_data,need_elements_list):
     return data_signlas_age
 
 
-def mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length):
+def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length):
 
 
     with open(data_pickle_path,"rb") as f:
         data = pickle.load(f) #信号データ
-    with open(age_pickle_path,"rb") as g:
-        age_map = pickle.load(g) #年齢の対応データ
+    with open(age_json_path,"r") as g:
+        age_map = json.load(g) #年齢の対応データ
     
     merged_data = merging_data(data,age_map,need_elements_list) #信号と年齢データを対応付ける
     data_signals_age = extractioning_signals(merged_data,need_elements_list) #必要なデータだけ取得
@@ -194,7 +194,7 @@ def get_parser():
     args = parser.parse_args()
 
     data_pickle_path = args.data_path
-    age_pickle_path = args.age_path
+    age_json_path = args.age_path
     out_path = args.out_path
     train_rate = args.train_rate
     batch_size = args.batch_size
@@ -207,12 +207,12 @@ def get_parser():
     config_path = args.config
 
 
-    return data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path
+    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path
 
-def print_parser(data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list):
+def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list):
     logger.info("---------------------------------")
     logger.info("data_pickle_path:{}".format(data_pickle_path))
-    logger.info("age_pickle_path:{}".format(age_pickle_path))
+    logger.info("age_json_path:{}".format(age_json_path))
     logger.info("out_path:{}".format(out_path))
     logger.info("train_rate:{}".format(train_rate))
     logger.info("batch_size:{}".format(batch_size))
@@ -225,7 +225,7 @@ def print_parser(data_pickle_path,age_pickle_path,out_path,train_rate,batch_size
     logger.info("---------------------------------")
 
 def main():
-    data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path = get_parser()
+    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path = get_parser()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     out_path = mk_out_dir(out_path)
     log_start(out_path,config_path)
@@ -233,11 +233,11 @@ def main():
     logger.info("Device:{}".format(device))
 
 
-    print_parser(data_pickle_path,age_pickle_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list)
+    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list)
 
     
     define_seed() #seed固定
-    trainloader,testloader = mk_dataset(data_pickle_path,age_pickle_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length) #データローダー取得
+    trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length) #データローダー取得
     num_axis = len(need_elements_list)
     net = Net(num_axis,hidden_dim).to(device)
     logger.info(net)
