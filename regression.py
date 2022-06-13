@@ -16,6 +16,7 @@ import argparse
 from logging import getLogger,config
 import logging
 import json
+import mymodels
 SEED = 42
 
 def define_seed():
@@ -23,22 +24,6 @@ def define_seed():
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     torch.backends.cudnn.deterministic = True
-
-class Net(nn.Module):
-    def __init__(self,num_axis,hidden_dim,num_layers):
-        super(Net,self).__init__()
-        self.hidden_dim = hidden_dim
-        self.lstm = nn.LSTM(num_axis,hidden_dim,num_layers,batch_first=True)
-        self.fc = nn.Linear(hidden_dim,1)
-
-        
-    def forward(self,x):
-        _,x = self.lstm(x)
-        x = x[0][-1].view(-1, self.hidden_dim)
-        x = self.fc(x)
-        
-        return x
-
 
 
 def mk_data_pickle(dataset_path):
@@ -314,7 +299,7 @@ def main():
     define_seed() #seed固定
     trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
     num_axis = len(need_elements_list)
-    net = Net(num_axis,hidden_dim,num_layers).to(device)
+    net = mymodels.Lstm_net(num_axis,hidden_dim,num_layers).to(device)
     logger.info(net)
 
 
