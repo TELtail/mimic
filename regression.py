@@ -151,12 +151,13 @@ def plot_age_histogram(data_t,out_path):
     labels = np.array(data_t)
     labels = np.ravel(labels)
     hist_png_path = os.path.join(out_path,"age_hist.png")
-    plt.figure(figsize=(12,8))
-    plt.hist(labels,bins=70)
-    plt.xlabel("Age")
-    plt.ylabel("Number of people")
+    fig_age = plt.figure(figsize=(12,8))
+    ax_age = fig_age.add_subplot(111)
+    ax_age.hist(labels,bins=70)
+    ax_age.set_xlabel("Age")
+    ax_age.set_ylabel("Number of people")
     plt.rcParams["font.size"] = 30
-    plt.savefig(hist_png_path)
+    fig_age.savefig(hist_png_path)
 
     #一様分布、正規分布でのMSEの比較
     uniform = np.random.randint(20,90,len(labels))
@@ -221,15 +222,17 @@ def mk_out_dir(out_path):
 def plot_loss_glaph(epoch_loss,out_path):
     labels = ["train","test"]
     epoch_loss = np.array(epoch_loss) #スライスできるようにndarrayに変更
+    fig_loss = plt.figure(figsize=(12,8))
+    ax_loss = fig_loss.add_subplot(111)
     for i in range(2): #学習データとテストデータのlossだから2
-        plt.plot(range(len(epoch_loss)),epoch_loss[:,i],label=labels[i])
+        ax_loss.plot(range(len(epoch_loss)),epoch_loss[:,i],label=labels[i])
     png_path = os.path.join(out_path,"loss.png")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
+    ax_loss.set_xlabel("Epoch")
+    ax_loss.set_ylabel("Loss")
     plt.rcParams["font.size"] = 20
     plt.tight_layout()
     plt.legend()
-    plt.savefig(png_path)
+    fig_loss.savefig(png_path)
 
 def log_start(out_path,config_path):
     with open(config_path,"r") as f:
