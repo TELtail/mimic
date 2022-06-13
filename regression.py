@@ -196,12 +196,14 @@ def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
 
     return running_loss
 
-def test_method(testloader,net,optimizer,loss_fn,device):
+def test_method(testloader,net,loss_fn,device,print_result_flag):
     running_loss = 0
     size = len(testloader.dataset)
     for i,(inputs,labels) in enumerate(testloader):
         inputs,labels = inputs.to(device),labels.to(device)
         outputs = net(inputs)
+        if print_result_flag:
+            logger.info(outputs)
         loss = loss_fn(outputs,labels.float())
         running_loss += loss.item()
     
@@ -258,6 +260,7 @@ def get_parser():
     parser.add_argument("--max",help="最大の信号の長さ",type=int,default=1500)
     parser.add_argument("--need_elements",help="必要な要素名",nargs="*",default=['HR', 'RESP', 'SpO2'])
     parser.add_argument("--config",help="log_config.jsonのpath指定",default="./log_config.json")
+    parser.add_argument("--print_result",help="test結果をprintするかどうか",action='store_true')
 
     args = parser.parse_args()
 
@@ -274,11 +277,12 @@ def get_parser():
     maximum_signal_length = args.max
     need_elements_list = args.need_elements
     config_path = args.config
+    print_result_flag = args.print_result
 
 
-    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path
+    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag
 
-def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path):
+def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag):
     logger.info("---------------------------------")
     logger.info("data_pickle_path:{}".format(data_pickle_path))
     logger.info("age_json_path:{}".format(age_json_path))
@@ -292,10 +296,11 @@ def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,h
     logger.info("minimum_signal_length:{}".format(minimum_signal_length))
     logger.info("maximum_signal_length:{}".format(maximum_signal_length))
     logger.info("need_elements_list:{}".format(need_elements_list))
+    logger.info("print_result_flag:{}".format(print_result_flag))
     logger.info("---------------------------------")
 
 def main():
-    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path = get_parser()
+    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag = get_parser()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     out_path = mk_out_dir(out_path)
     log_start(out_path,config_path)
@@ -303,7 +308,7 @@ def main():
     logger.info("Device:{}".format(device))
 
 
-    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path)
+    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag)
 
     
     define_seed() #seed固定
@@ -320,7 +325,7 @@ def main():
         for epoch in range(epochs):
             logger.info(f"----- epoch:{epoch+1} ---------------------------")
             train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
-            test_running_loss = test_method(testloader,net,optimizer,loss_fn,device)
+            test_running_loss = test_method(testloader,net,loss_fn,device,print_result_flag)
             epoch_loss.append([train_running_loss,test_running_loss])
     except KeyboardInterrupt:
         pass
