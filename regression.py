@@ -25,10 +25,10 @@ def define_seed():
     torch.backends.cudnn.deterministic = True
 
 class Net(nn.Module):
-    def __init__(self,num_axis,hidden_dim):
+    def __init__(self,num_axis,hidden_dim,num_layers):
         super(Net,self).__init__()
         self.hidden_dim = hidden_dim
-        self.lstm = nn.LSTM(num_axis,hidden_dim,3,batch_first=True)
+        self.lstm = nn.LSTM(num_axis,hidden_dim,num_layers,batch_first=True)
         self.fc = nn.Linear(hidden_dim,1)
 
         
@@ -251,6 +251,7 @@ def get_parser():
     parser.add_argument("--train_rate",help="学習データの割合",type=float,default=0.8)
     parser.add_argument("--batch_size",help="バッチサイズ",type=int,default=8)
     parser.add_argument("--hidden_dim",help="LSTMの次元",type=int,default=64)
+    parser.add_argument("--num_layers",help="LSTMの層数",type=int,default=3)
     parser.add_argument("--epochs",help="epoch数",type=int,default=100)
     parser.add_argument("--lr",help="学習率",type=float,default=1e-3)
     parser.add_argument("--min",help="最小の信号の長さ",type=int,default=300)
@@ -266,6 +267,7 @@ def get_parser():
     train_rate = args.train_rate
     batch_size = args.batch_size
     hidden_dim = args.hidden_dim
+    num_layers = args.num_layers
     epochs = args.epochs
     lr = args.lr
     minimum_signal_length = args.min
@@ -274,12 +276,13 @@ def get_parser():
     config_path = args.config
 
 
-    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path
+    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path
 
-def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list):
+def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path):
     logger.info("---------------------------------")
     logger.info("data_pickle_path:{}".format(data_pickle_path))
     logger.info("age_json_path:{}".format(age_json_path))
+    logger.info("config_path:{}".format(config_path))
     logger.info("out_path:{}".format(out_path))
     logger.info("train_rate:{}".format(train_rate))
     logger.info("batch_size:{}".format(batch_size))
@@ -292,7 +295,7 @@ def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,h
     logger.info("---------------------------------")
 
 def main():
-    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path = get_parser()
+    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path = get_parser()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     out_path = mk_out_dir(out_path)
     log_start(out_path,config_path)
@@ -300,13 +303,13 @@ def main():
     logger.info("Device:{}".format(device))
 
 
-    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list)
+    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path)
 
     
     define_seed() #seed固定
     trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
     num_axis = len(need_elements_list)
-    net = Net(num_axis,hidden_dim).to(device)
+    net = Net(num_axis,hidden_dim,num_layers).to(device)
     logger.info(net)
 
 
