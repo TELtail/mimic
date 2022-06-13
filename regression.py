@@ -107,7 +107,8 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
     for key,one_data in data_signals_age.items():
         
         tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length]
-        tmp = np.nan_to_num(tmp,nan=0) #nanを0で置換
+        ave = np.nanmean(tmp)
+        tmp = np.nan_to_num(tmp,nan=ave) #nanを0で置換
         tmp = torch.tensor(tmp) 
         data_x.append(tmp)
         data_t.append([one_data["age"]])
