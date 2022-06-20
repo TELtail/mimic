@@ -16,6 +16,24 @@ class Lstm_net(nn.Module):
         
         return x
 
+class Conv1D_net(nn.Module):
+    def __init__(self,num_axis,sig_length,hidden_dim,num_layers):
+        super(Lstm_net,self).__init__()
+        self.hidden_dim = hidden_dim
+        self.conv1 = nn.Conv1d(sig_length,hidden_dim,kernel_size=16,stride=1)
+        self.relu = nn.ReLU()
+        self.maxpool = nn.MaxPool1d(kernel_size=16,stride=2)
+        self.fc = nn.Linear(hidden_dim,1)
+
+        
+    def forward(self,x):
+        x = self.relu(self.conv1(x))
+        x = self.maxpool(x)
+        x = self.fc(x)
+        
+        return x
+
+
 class Linear_net(nn.Module):
     def __init__(self,num_axis,hidden_dim,num_layers,data_len):
         super(Linear_net,self).__init__()
