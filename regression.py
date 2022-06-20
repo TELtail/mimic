@@ -299,7 +299,7 @@ def main():
     define_seed() #seed固定
     trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
     num_axis = len(need_elements_list)
-    net = mymodels.Lstm_net(num_axis,hidden_dim,num_layers).to(device)
+    net = mymodels.Conv1D_net(maximum_signal_length,num_axis,hidden_dim).to(device)
     logger.info(net)
 
 
