@@ -5,10 +5,11 @@ import numpy as np
 import json
 import torch
 import torch.nn as nn
-import matplotlib.pyplot as plt
-from logging import getLogger,config
 import wfdb
-from sklearn.metrics import mean_squared_error
+import plot_glaph
+from sklearn.model_selection import train_test_split
+import common_utils
+
 
 def mk_data_pickle(dataset_path):
     data = {}
@@ -82,10 +83,10 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
         data_x.append(tmp)
         data_t.append([one_data["age"]])
 
-    plot_age_histogram(data_t,out_path)
+    plot_glaph.plot_age_histogram(data_t,out_path)
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
-    train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
+    train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=common_utils.SEED) #学習データとテストデータを分割
 
     dataset = torch.utils.data.TensorDataset(data_x,data_t)
 

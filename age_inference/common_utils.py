@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import datetime
 import os
-import age_inference.mymodels as mymodels
+import mymodels
 import json
 from logging import getLogger,config
 
@@ -36,9 +36,19 @@ def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length):
     return model
 
 
-def log_start(out_path,config_path):
+
+def set_log_settings(out_path,config_path):
     with open(config_path,"r") as f:
         log_conf = json.load(f)
     log_conf["handlers"]["fileHandler"]["filename"] = os.path.join(out_path,"train_log.txt") #出力ログのpathを指定
-    config.dictConfig(log_conf)
+    
+    global log_config
+    log_config = log_conf
+
+
+def log_start():
+    global log_config
+    config.dictConfig(log_config)
     logger = getLogger(__name__)
+
+    return logger

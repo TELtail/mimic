@@ -1,11 +1,13 @@
 import argparse
-from logging import getLogger,config
+import common_utils
+
+
 
 def get_parser():
     parser = argparse.ArgumentParser("MIMIC-IIデータセットで年齢の学習、推論を行うプログラム")
     parser.add_argument("--data_path",help="信号のバイナリデータのパス")
     parser.add_argument("--age_path",help="年齢のバイナリデータのパス")
-    parser.add_argument("--out_path",help="グラフ等を出力するパス",default="./out")
+    parser.add_argument("--out_path",help="グラフ等を出力するパス",default="../out")
     parser.add_argument("--train_rate",help="学習データの割合",type=float,default=0.8)
     parser.add_argument("--batch_size",help="バッチサイズ",type=int,default=8)
     parser.add_argument("--hidden_dim",help="LSTMの次元",type=int,default=64)
@@ -46,7 +48,7 @@ def print_parser(data_pickle_path,age_json_path,out_path,train_rate,
                 batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,
                 maximum_signal_length,need_elements_list,config_path,print_result_flag,
                 model_name):
-    logger = getLogger(__name__)
+    logger = common_utils.log_start()
     logger.info("---------------------------------")
     logger.info("data_pickle_path:{}".format(data_pickle_path))
     logger.info("age_json_path:{}".format(age_json_path))

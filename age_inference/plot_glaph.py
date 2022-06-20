@@ -3,6 +3,7 @@ import os
 from logging import getLogger,config
 import numpy as np
 from sklearn.metrics import mean_squared_error
+import common_utils
 
 
 def plot_result(t_test,t_pred,out_path):
@@ -35,7 +36,7 @@ def plot_loss_glaph(epoch_loss,out_path):
 
 def plot_age_histogram(data_t,out_path):
     #年齢の分布をプロット
-    logger = getLogger(__name__)
+    logger = common_utils.log_start()
     labels = np.array(data_t)
     labels = np.ravel(labels) #一次元化
     hist_png_path = os.path.join(out_path,"age_hist.png")
