@@ -159,9 +159,6 @@ def plot_age_histogram(data_t,out_path):
 
 
 
-
-
-
 def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
     running_loss = 0
     size = len(trainloader.dataset)
@@ -184,18 +181,22 @@ def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
 def test_method(testloader,net,loss_fn,device,print_result_flag):
     running_loss = 0
     size = len(testloader.dataset)
+    predicted_for_plot = []
     for i,(inputs,labels) in enumerate(testloader):
         inputs,labels = inputs.to(device),labels.to(device)
         outputs = net(inputs)
         if print_result_flag:
             logger.info(outputs)
         loss = loss_fn(outputs,labels.float())
+        outputs_np = outputs.to('cpu').detach().numpy().copy().flatten()[0]
+        labels_np = labels.to('cpu').detach().numpy().copy().flatten()[0]
+        predicted_for_plot.append([outputs_np,labels_np])
         running_loss += loss.item()
     
     running_loss /= (i+1)
     logger.info(f"test_loss:{running_loss}")
 
-    return running_loss
+    return running_loss,np.array(predicted_for_plot)
 
 
 
@@ -205,6 +206,17 @@ def mk_out_dir(out_path):
     out_path = os.path.join(out_path,now_string)
     os.mkdir(out_path) #保存ディレクトリ作成
     return out_path
+
+def plot_result(t_test,t_pred,out_path):
+    result_fig = plt.figure(figsize=(12,9))
+    result_ax = result_fig.add_subplot(111)
+    result_ax.plot(t_test, t_test, color = 'red', label = 'x=y') # 直線y = x (真値と予測値が同じ場合は直線状に点がプロットされる)
+    result_ax.scatter(t_test, t_pred) # 散布図のプロット
+    plt.rcParams["font.size"] = 30
+    result_ax.set_xlabel('Correct Answer Label') # x軸ラベル
+    result_ax.set_ylabel('Predicted Label') # y軸ラベル
+    plt.savefig(os.path.join(out_path,"predict_result.png"))
+
 
 def plot_loss_glaph(epoch_loss,out_path):
     labels = ["train","test"]
@@ -299,7 +311,7 @@ def main():
     define_seed() #seed固定
     trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
     num_axis = len(need_elements_list)
-    net = mymodels.Conv1D_net(maximum_signal_length,num_axis,hidden_dim).to(device)
+    net = mymodels.Lstm_net(num_axis,hidden_dim,num_layers).to(device)
     logger.info(net)
 
 
@@ -310,13 +322,14 @@ def main():
         for epoch in range(epochs):
             logger.info(f"----- epoch:{epoch+1} ---------------------------")
             train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
-            test_running_loss = test_method(testloader,net,loss_fn,device,print_result_flag)
+            test_running_loss,predicted_for_plot = test_method(testloader,net,loss_fn,device,print_result_flag)
             epoch_loss.append([train_running_loss,test_running_loss])
     except KeyboardInterrupt:
         pass
 
     if len(epoch_loss) != 0:
         plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
+        plot_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path)
     else:
         logging.shutdown()
         shutil.rmtree(out_path) #1エポックもなければディレクトリごと削除
