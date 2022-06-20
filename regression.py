@@ -1,7 +1,9 @@
 import torch
+import torch.nn as nn
+from IPython.display import display
+import scipy
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error,mean_absolute_error
-import lightgbm as lgb
+from sklearn.metrics import mean_squared_error
 import wfdb
 import numpy as np
 import glob
@@ -9,9 +11,12 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 import datetime
+import shutil
 import argparse
 from logging import getLogger,config
+import logging
 import json
+import mymodels
 SEED = 42
 
 def define_seed():
@@ -65,7 +70,7 @@ def extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_f
     return data_signlas_age,data_not_have_feature
 
 
-def mk_dataset(data_pickle_path,age_json_path,train_rate,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
+def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
 
 
     with open(data_pickle_path,"rb") as f:
@@ -75,6 +80,9 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,need_elements_list,mini
     
     merged_data,data_not_have_feature = merging_data(data,age_map,need_elements_list) #信号と年齢データを対応付ける
     data_signals_age,data_not_have_feature = extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_feature,minimum_signal_length) #必要なデータだけ取得
+
+    
+    
 
     delete_data_info(out_path,data_not_have_feature,age_map,len(data),len(data_signals_age)) #使用しなかったデータを集計してjsonファイルに出力する
 
@@ -86,19 +94,23 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,need_elements_list,mini
         tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length]
         ave = np.nanmean(tmp)
         tmp = np.nan_to_num(tmp,nan=ave) #nanを0で置換
+        tmp = torch.tensor(tmp) 
         data_x.append(tmp)
-        data_t.append(one_data["age"])
-    
-    data_x = np.array(data_x)
-    data_t = np.array(data_t)
-
+        data_t.append([one_data["age"]])
 
     plot_age_histogram(data_t,out_path)
-    x_train, x_test, t_train, t_test = train_test_split(data_x,data_t,train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
-    x_train = x_train.reshape(-1,x_train.shape[1]*x_train.shape[2])
-    x_test = x_test.reshape(-1,x_test.shape[1]*x_test.shape[2])
+    data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
+    data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
+    train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
 
-    return x_train, x_test, t_train, t_test
+    dataset = torch.utils.data.TensorDataset(data_x,data_t)
+
+    traindataset = torch.torch.utils.data.Subset(dataset,train_indices) #取得したindexをもとに新たにdatasetを作成
+    testdataset = torch.torch.utils.data.Subset(dataset,test_indices) #取得したindexをもとに新たにdatasetを作成
+    trainloader = torch.utils.data.DataLoader(traindataset,batch_size=batch_size)
+    testloader  = torch.utils.data.DataLoader(testdataset,batch_size=1)
+
+    return trainloader,testloader
 
 
 def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num):
@@ -144,15 +156,46 @@ def plot_age_histogram(data_t,out_path):
     logger.info("Normal distribution    age N(70,20^2): {}".format(mse_normal))
     logger.info("---------------------------------")
 
-def plot_result(t_test,t_pred,out_path):
-    result_fig = plt.figure(figsize=(12,9))
-    result_ax = result_fig.add_subplot(111)
-    result_ax.plot(t_test, t_test, color = 'red', label = 'x=y') # 直線y = x (真値と予測値が同じ場合は直線状に点がプロットされる)
-    result_ax.scatter(t_test, t_pred) # 散布図のプロット
-    plt.rcParams["font.size"] = 30
-    result_ax.set_xlabel('Correct Answer Label') # x軸ラベル
-    result_ax.set_ylabel('Predicted Label') # y軸ラベル
-    plt.savefig(os.path.join(out_path,"predict_result.png"))
+
+
+
+
+
+
+def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
+    running_loss = 0
+    size = len(trainloader.dataset)
+    for i,(inputs,labels) in enumerate(trainloader):
+        optimizer.zero_grad() #勾配初期化
+        inputs,labels = inputs.to(device),labels.to(device)
+        outputs = net(inputs)
+        loss = loss_fn(outputs,labels.float())
+        running_loss += loss.item()
+        loss.backward()
+        optimizer.step()
+        if i%10 == 0:
+            logger.info(f" {i}/{int(size/batch_size)} loss:{loss}")
+    
+    running_loss /= (i+1)
+    logger.info(f"train_loss:{running_loss}")
+
+    return running_loss
+
+def test_method(testloader,net,loss_fn,device,print_result_flag):
+    running_loss = 0
+    size = len(testloader.dataset)
+    for i,(inputs,labels) in enumerate(testloader):
+        inputs,labels = inputs.to(device),labels.to(device)
+        outputs = net(inputs)
+        if print_result_flag:
+            logger.info(outputs)
+        loss = loss_fn(outputs,labels.float())
+        running_loss += loss.item()
+    
+    running_loss /= (i+1)
+    logger.info(f"test_loss:{running_loss}")
+
+    return running_loss
 
 
 
@@ -162,6 +205,21 @@ def mk_out_dir(out_path):
     out_path = os.path.join(out_path,now_string)
     os.mkdir(out_path) #保存ディレクトリ作成
     return out_path
+
+def plot_loss_glaph(epoch_loss,out_path):
+    labels = ["train","test"]
+    epoch_loss = np.array(epoch_loss) #スライスできるようにndarrayに変更
+    fig_loss = plt.figure(figsize=(12,8))
+    ax_loss = fig_loss.add_subplot(111)
+    for i in range(2): #学習データとテストデータのlossだから2
+        ax_loss.plot(range(len(epoch_loss)),epoch_loss[:,i],label=labels[i])
+    png_path = os.path.join(out_path,"loss.png")
+    ax_loss.set_xlabel("Epoch")
+    ax_loss.set_ylabel("Loss")
+    plt.rcParams["font.size"] = 20
+    plt.tight_layout()
+    plt.legend()
+    fig_loss.savefig(png_path)
 
 def log_start(out_path,config_path):
     with open(config_path,"r") as f:
@@ -178,10 +236,16 @@ def get_parser():
     parser.add_argument("--age_path",help="年齢のバイナリデータのパス")
     parser.add_argument("--out_path",help="グラフ等を出力するパス",default="./out")
     parser.add_argument("--train_rate",help="学習データの割合",type=float,default=0.8)
+    parser.add_argument("--batch_size",help="バッチサイズ",type=int,default=8)
+    parser.add_argument("--hidden_dim",help="LSTMの次元",type=int,default=64)
+    parser.add_argument("--num_layers",help="LSTMの層数",type=int,default=3)
+    parser.add_argument("--epochs",help="epoch数",type=int,default=100)
+    parser.add_argument("--lr",help="学習率",type=float,default=1e-3)
     parser.add_argument("--min",help="最小の信号の長さ",type=int,default=300)
     parser.add_argument("--max",help="最大の信号の長さ",type=int,default=1500)
     parser.add_argument("--need_elements",help="必要な要素名",nargs="*",default=['HR', 'RESP', 'SpO2'])
     parser.add_argument("--config",help="log_config.jsonのpath指定",default="./log_config.json")
+    parser.add_argument("--print_result",help="test結果をprintするかどうか",action='store_true')
 
     args = parser.parse_args()
 
@@ -189,32 +253,74 @@ def get_parser():
     age_json_path = args.age_path
     out_path = args.out_path
     train_rate = args.train_rate
+    batch_size = args.batch_size
+    hidden_dim = args.hidden_dim
+    num_layers = args.num_layers
+    epochs = args.epochs
+    lr = args.lr
     minimum_signal_length = args.min
     maximum_signal_length = args.max
     need_elements_list = args.need_elements
     config_path = args.config
+    print_result_flag = args.print_result
 
 
-    return data_pickle_path,age_json_path,out_path,train_rate,minimum_signal_length,maximum_signal_length,need_elements_list,config_path
+    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag
+
+def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag):
+    logger.info("---------------------------------")
+    logger.info("data_pickle_path:{}".format(data_pickle_path))
+    logger.info("age_json_path:{}".format(age_json_path))
+    logger.info("config_path:{}".format(config_path))
+    logger.info("out_path:{}".format(out_path))
+    logger.info("train_rate:{}".format(train_rate))
+    logger.info("batch_size:{}".format(batch_size))
+    logger.info("hidden_dim:{}".format(hidden_dim))
+    logger.info("epochs:{}".format(epochs))
+    logger.info("lr:{}".format(lr))
+    logger.info("minimum_signal_length:{}".format(minimum_signal_length))
+    logger.info("maximum_signal_length:{}".format(maximum_signal_length))
+    logger.info("need_elements_list:{}".format(need_elements_list))
+    logger.info("print_result_flag:{}".format(print_result_flag))
+    logger.info("---------------------------------")
+
 def main():
-    data_pickle_path,age_json_path,out_path,train_rate,minimum_signal_length,maximum_signal_length,need_elements_list,config_path = get_parser()
+    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag = get_parser()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     out_path = mk_out_dir(out_path)
     log_start(out_path,config_path)
 
-    define_seed() #seed固定
-    x_train, x_test, t_train, t_test= mk_dataset(data_pickle_path,age_json_path,train_rate,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
+    logger.info("Device:{}".format(device))
 
-    # モデルの学習
-    model = lgb.LGBMRegressor() # モデルのインスタンスの作成
-    model.fit(x_train, t_train) # モデルの学習
 
-    # テストデータの予測
-    t_pred = model.predict(x_test)
-    mseloss = (mean_squared_error(t_test, t_pred))
-    logger.info("MSEloss:"+str(mseloss))
-    plot_result(t_test,t_pred,out_path)
+    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag)
 
     
+    define_seed() #seed固定
+    trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
+    num_axis = len(need_elements_list)
+    net = mymodels.Conv1D_net(maximum_signal_length,num_axis,hidden_dim).to(device)
+    logger.info(net)
+
+
+    optimizer = torch.optim.Adam(net.parameters(),lr=lr)
+    loss_fn = nn.MSELoss()
+    epoch_loss = [] #グラフに出力するための損失格納用リスト
+    try:
+        for epoch in range(epochs):
+            logger.info(f"----- epoch:{epoch+1} ---------------------------")
+            train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
+            test_running_loss = test_method(testloader,net,loss_fn,device,print_result_flag)
+            epoch_loss.append([train_running_loss,test_running_loss])
+    except KeyboardInterrupt:
+        pass
+
+    if len(epoch_loss) != 0:
+        plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
+    else:
+        logging.shutdown()
+        shutil.rmtree(out_path) #1エポックもなければディレクトリごと削除
+
 
 if __name__ == "__main__":
     main()
