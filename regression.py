@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-from IPython.display import display
-import scipy
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 import wfdb
@@ -134,7 +132,7 @@ def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num
 def plot_age_histogram(data_t,out_path):
     #年齢の分布をプロット
     labels = np.array(data_t)
-    labels = np.ravel(labels)
+    labels = np.ravel(labels) #一次元化
     hist_png_path = os.path.join(out_path,"age_hist.png")
     fig_age = plt.figure(figsize=(12,8))
     ax_age = fig_age.add_subplot(111)
@@ -180,7 +178,6 @@ def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
 
 def test_method(testloader,net,loss_fn,device,print_result_flag):
     running_loss = 0
-    size = len(testloader.dataset)
     predicted_for_plot = []
     for i,(inputs,labels) in enumerate(testloader):
         inputs,labels = inputs.to(device),labels.to(device)
@@ -188,8 +185,8 @@ def test_method(testloader,net,loss_fn,device,print_result_flag):
         if print_result_flag:
             logger.info(outputs)
         loss = loss_fn(outputs,labels.float())
-        outputs_np = outputs.to('cpu').detach().numpy().copy().flatten()[0]
-        labels_np = labels.to('cpu').detach().numpy().copy().flatten()[0]
+        outputs_np = outputs.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
+        labels_np = labels.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
         predicted_for_plot.append([outputs_np,labels_np])
         running_loss += loss.item()
     
@@ -208,6 +205,7 @@ def mk_out_dir(out_path):
     return out_path
 
 def plot_result(t_test,t_pred,out_path):
+    #最終テストの結果の散布図を作成
     result_fig = plt.figure(figsize=(12,9))
     result_ax = result_fig.add_subplot(111)
     result_ax.plot(t_test, t_test, color = 'red', label = 'x=y') # 直線y = x (真値と予測値が同じ場合は直線状に点がプロットされる)
@@ -215,10 +213,11 @@ def plot_result(t_test,t_pred,out_path):
     plt.rcParams["font.size"] = 30
     result_ax.set_xlabel('Correct Answer Label') # x軸ラベル
     result_ax.set_ylabel('Predicted Label') # y軸ラベル
-    plt.savefig(os.path.join(out_path,"predict_result.png"))
+    plt.savefig(os.path.join(out_path,"predict_result.png")) 
 
 
 def plot_loss_glaph(epoch_loss,out_path):
+    #損失の変遷をプロット
     labels = ["train","test"]
     epoch_loss = np.array(epoch_loss) #スライスできるようにndarrayに変更
     fig_loss = plt.figure(figsize=(12,8))
@@ -234,6 +233,7 @@ def plot_loss_glaph(epoch_loss,out_path):
     fig_loss.savefig(png_path)
 
 def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length):
+    #モデル選択
     if model_name == "Lstm_net":
         model = mymodels.Lstm_net(num_axis,hidden_dim,num_layers)
     if model_name == "Conv1D_net":
