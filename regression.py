@@ -233,6 +233,17 @@ def plot_loss_glaph(epoch_loss,out_path):
     plt.legend()
     fig_loss.savefig(png_path)
 
+def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length):
+    if model_name == "Lstm_net":
+        model = mymodels.Lstm_net(num_axis,hidden_dim,num_layers)
+    if model_name == "Conv1D_net":
+        model = mymodels.Conv1D_net(num_axis,hidden_dim,sig_length)
+    if model_name == "Linear_net":
+        model = mymodels.Linear_net(num_axis,hidden_dim,num_layers,sig_length)
+    
+    return model
+
+
 def log_start(out_path,config_path):
     with open(config_path,"r") as f:
         log_conf = json.load(f)
@@ -258,6 +269,7 @@ def get_parser():
     parser.add_argument("--need_elements",help="必要な要素名",nargs="*",default=['HR', 'RESP', 'SpO2'])
     parser.add_argument("--config",help="log_config.jsonのpath指定",default="./log_config.json")
     parser.add_argument("--print_result",help="test結果をprintするかどうか",action='store_true')
+    parser.add_argument("--model_name",help="使用するモデル名を指定",default="Lstm_net")
 
     args = parser.parse_args()
 
@@ -275,11 +287,12 @@ def get_parser():
     need_elements_list = args.need_elements
     config_path = args.config
     print_result_flag = args.print_result
+    model_name = args.model_name
 
 
-    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag
+    return data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name
 
-def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag):
+def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name):
     logger.info("---------------------------------")
     logger.info("data_pickle_path:{}".format(data_pickle_path))
     logger.info("age_json_path:{}".format(age_json_path))
@@ -297,7 +310,7 @@ def print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,h
     logger.info("---------------------------------")
 
 def main():
-    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag = get_parser()
+    data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name = get_parser()
     device = "cuda" if torch.cuda.is_available() else "cpu"
     out_path = mk_out_dir(out_path)
     log_start(out_path,config_path)
@@ -305,13 +318,13 @@ def main():
     logger.info("Device:{}".format(device))
 
 
-    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag)
+    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name)
 
     
     define_seed() #seed固定
     trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
     num_axis = len(need_elements_list)
-    net = mymodels.Lstm_net(num_axis,hidden_dim,num_layers).to(device)
+    net = select_model(model_name,num_axis,hidden_dim,num_layers,maximum_signal_length).to(device)
     logger.info(net)
 
 
@@ -329,7 +342,7 @@ def main():
 
     if len(epoch_loss) != 0:
         plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
-        plot_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path)
+        plot_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
     else:
         logging.shutdown()
         shutil.rmtree(out_path) #1エポックもなければディレクトリごと削除
