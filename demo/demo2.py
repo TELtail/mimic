@@ -1,5 +1,5 @@
 
-import demo3
+import demo.demo3 as demo3
 
 def main():
     print("start")
