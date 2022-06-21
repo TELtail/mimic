@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error
 import common_utils
 
 
-def plot_result(t_test,t_pred,out_path):
+def plot_inference_result(t_test,t_pred,out_path):
     #最終テストの結果の散布図を作成
     result_fig = plt.figure(figsize=(12,9))
     result_ax = result_fig.add_subplot(111)
@@ -36,7 +36,6 @@ def plot_loss_glaph(epoch_loss,out_path):
 
 def plot_age_histogram(data_t,out_path):
     #年齢の分布をプロット
-    logger = common_utils.log_start()
     labels = np.array(data_t)
     labels = np.ravel(labels) #一次元化
     hist_png_path = os.path.join(out_path,"age_hist.png")
@@ -47,7 +46,10 @@ def plot_age_histogram(data_t,out_path):
     ax_age.set_ylabel("Number of people")
     plt.rcParams["font.size"] = 30
     fig_age.savefig(hist_png_path)
+    mse_to_comparison(labels)
 
+def mse_to_comparison(labels):
+    logger = common_utils.log_start()
     #一様分布、正規分布でのMSEの比較
     uniform = np.random.randint(20,90,len(labels))
     normal = np.random.normal(70,20,len(labels))

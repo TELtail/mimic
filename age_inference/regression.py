@@ -86,7 +86,7 @@ def main():
 
     if len(epoch_loss) != 0:
         plot_glaph.plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
-        plot_glaph.plot_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
+        plot_glaph.plot_inference_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
     else:
         logging.shutdown()
         shutil.rmtree(out_path) #1エポックもなければディレクトリごと削除

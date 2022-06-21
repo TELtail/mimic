@@ -63,4 +63,5 @@ def print_parser(data_pickle_path,age_json_path,out_path,train_rate,
     logger.info("maximum_signal_length:{}".format(maximum_signal_length))
     logger.info("need_elements_list:{}".format(need_elements_list))
     logger.info("print_result_flag:{}".format(print_result_flag))
+    logger.info("model_name:{}".format(model_name))
     logger.info("---------------------------------")
