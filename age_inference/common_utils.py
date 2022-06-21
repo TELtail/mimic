@@ -50,5 +50,4 @@ def log_start():
     global log_config
     config.dictConfig(log_config)
     logger = getLogger(__name__)
-
     return logger

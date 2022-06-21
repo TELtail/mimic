@@ -4,3 +4,5 @@ out
 start.sh
 ssh_log
 shortcut
+__pycache__
+age_inference/__pycache__

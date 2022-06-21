@@ -26,17 +26,7 @@
     },
 
     "loggers": {
-        "__main__": {
-            "level": "DEBUG",
-            "handlers": ["consoleHandler", "fileHandler"],
-            "propagate": false
-        },
-        "same_hierarchy": {
-            "level": "DEBUG",
-            "handlers": ["consoleHandler", "fileHandler"],
-            "propagate": false
-        },
-        "lower.sub": {
+        "common_utils": {
             "level": "DEBUG",
             "handlers": ["consoleHandler", "fileHandler"],
             "propagate": false
