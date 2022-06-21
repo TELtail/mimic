@@ -9,7 +9,7 @@ import wfdb
 from plot_glaph import plot_age_histogram
 from common_utils import SEED
 from sklearn.model_selection import train_test_split
-
+import copy
 
 
 def mk_data_pickle(dataset_path):
@@ -55,18 +55,17 @@ def extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_f
 
     return data_signlas_age,data_not_have_feature
 
-def nan_data_delete(data_signals_age,data_not_have_feature):
+def nan_data_delete(data_signals_age,age_map,data_not_have_feature):
+    data_signals_age_zero_delete = copy.copy(data_signals_age) #戻り値
+    data_not_have_feature["too_many_zero"] = [] #削除したデータのカウント用
 
-    for key,item in data_signals_age.items():
-        tmp = data_signals_age[key]["signals"][:,2]
-        if sum(tmp==0)/len(tmp) > 0.05:
-            i += 1
-            #print(sum(tmp == 0),len(tmp))
-        
-    #print(data_not_have_feature)
-    print("---")
-    print(i,len(data_signals_age))
-    return data_signals_age,data_not_have_feature
+    for key,one_data in data_signals_age.items():
+        zero_num = np.sum(data_signals_age[key]["signals"]==0,axis=0) #ゼロの数を軸ごとに計算
+        if max(zero_num)/len(data_signals_age[key]["signals"]) > 0.05: #ゼロ率が高い信号を削除
+            data_not_have_feature["too_many_zero"].append([key,age_map["data"][key]["patient_number"]]) #削除したデータのカウント用
+            del data_signals_age_zero_delete[key] #削除実行
+    print(len(data_signals_age_zero_delete))
+    return data_signals_age_zero_delete,data_not_have_feature
 
 def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
 
@@ -78,16 +77,14 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
     
     merged_data,data_not_have_feature = merging_data(data,age_map,need_elements_list) #信号と年齢データを対応付ける
     data_signals_age,data_not_have_feature = extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_feature,minimum_signal_length) #必要なデータだけ取得
-
-    data_signals_age,data_not_have_feature = nan_data_delete(data_signals_age,data_not_have_feature)
+    data_signals_age_zero_delete,data_not_have_feature = nan_data_delete(data_signals_age,age_map,data_not_have_feature) #0が多すぎるデータの削除
     
-
-    delete_data_info(out_path,data_not_have_feature,age_map,len(data),len(data_signals_age)) #使用しなかったデータを集計してjsonファイルに出力する
+    delete_data_info(out_path,data_not_have_feature,age_map,len(data),len(data_signals_age_zero_delete)) #使用しなかったデータを集計してjsonファイルに出力する
 
     data_x = [] #信号
     data_t = [] #年齢(ラベル)
 
-    for key,one_data in data_signals_age.items():
+    for key,one_data in data_signals_age_zero_delete.items():
         
         tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length]
         convert_signal = Convert_signal(tmp)
