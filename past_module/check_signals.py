@@ -57,14 +57,18 @@ def mk_dataset(data_pickle_path,age_json_path,minimum_signal_length,maximum_sign
     plot_num_sqrt = int(math.sqrt(plot_num))
     for key,one_data in data_signals_age.items():
         tmp = np.array(one_data["signals"],dtype=np.float32)
-        convert_signal = Convert_signal(tmp)
-        tmp = convert_signal.outlier_correction()
 
-        
         if k % plot_num == 0: 
-            fig,axes = plt.subplots(plot_num_sqrt,plot_num_sqrt,figsize=(12,8))
+            fig,axes = plt.subplots(plot_num_sqrt,2*plot_num_sqrt,figsize=(16,8))
             axes = np.ravel(axes)
-        axes[k%plot_num].plot(range(len(tmp)),tmp[:,0:3])
+            j=0
+        axes[j].plot(range(len(tmp)),tmp[:,0:3])
+        j+=1
+        
+        convert_signal = Convert_signal(tmp)
+        tmp = convert_signal.zero_to_nan_to_ave()
+        axes[j].plot(range(len(tmp)),tmp[:,0:3])
+        j+=1
 
         if (k+1) % plot_num == 0:
             plt.show()
@@ -75,14 +79,17 @@ class Convert_signal:
         self.signal = signal
         self.ave = np.nanmean(self.signal)
     
-    def replace_nan(self):
+    def nan_to_ave(self):
         no_nan_signal = np.nan_to_num(self.signal,nan=self.ave)
         return no_nan_signal 
 
-    def outlier_correction(self):
+    def zero_to_nan_to_ave(self):
         self.signal[self.signal==0] = np.nan
-        converted_signal = self.replace_nan()
+        converted_signal = self.nan_to_ave()
         return converted_signal
+    
+    def outlier_to_nan_to_ave(self):
+        pass
 
 
 def get_parser():
