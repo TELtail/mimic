@@ -64,7 +64,6 @@ def nan_data_delete(data_signals_age,age_map,data_not_have_feature):
         if max(zero_num)/len(data_signals_age[key]["signals"]) > 0.05: #ゼロ率が高い信号を削除
             data_not_have_feature["too_many_zero"].append([key,age_map["data"][key]["patient_number"]]) #削除したデータのカウント用
             del data_signals_age_zero_delete[key] #削除実行
-    print(len(data_signals_age_zero_delete))
     return data_signals_age_zero_delete,data_not_have_feature
 
 def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
@@ -86,9 +85,9 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
 
     for key,one_data in data_signals_age_zero_delete.items():
         
-        tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length]
+        tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length] #ndarrayへの変更、指定された長さで削除
         convert_signal = Convert_signal(tmp)
-        tmp = convert_signal.nan_to_ave()
+        tmp = convert_signal.zero_to_nan_to_medi() 
 
         tmp = torch.tensor(tmp) 
         data_x.append(tmp)
