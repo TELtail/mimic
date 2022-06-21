@@ -55,6 +55,18 @@ def extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_f
 
     return data_signlas_age,data_not_have_feature
 
+def nan_data_delete(data_signals_age,data_not_have_feature):
+
+    for key,item in data_signals_age.items():
+        tmp = data_signals_age[key]["signals"][:,2]
+        if sum(tmp==0)/len(tmp) > 0.05:
+            i += 1
+            #print(sum(tmp == 0),len(tmp))
+        
+    #print(data_not_have_feature)
+    print("---")
+    print(i,len(data_signals_age))
+    return data_signals_age,data_not_have_feature
 
 def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
 
@@ -67,7 +79,7 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
     merged_data,data_not_have_feature = merging_data(data,age_map,need_elements_list) #信号と年齢データを対応付ける
     data_signals_age,data_not_have_feature = extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_feature,minimum_signal_length) #必要なデータだけ取得
 
-    
+    data_signals_age,data_not_have_feature = nan_data_delete(data_signals_age,data_not_have_feature)
     
 
     delete_data_info(out_path,data_not_have_feature,age_map,len(data),len(data_signals_age)) #使用しなかったデータを集計してjsonファイルに出力する
@@ -78,8 +90,9 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
     for key,one_data in data_signals_age.items():
         
         tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length]
-        ave = np.nanmean(tmp)
-        tmp = np.nan_to_num(tmp,nan=ave) #nanを0で置換
+        convert_signal = Convert_signal(tmp)
+        tmp = convert_signal.nan_to_ave()
+
         tmp = torch.tensor(tmp) 
         data_x.append(tmp)
         data_t.append([one_data["age"]])
@@ -97,6 +110,34 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
     testloader  = torch.utils.data.DataLoader(testdataset,batch_size=1)
 
     return trainloader,testloader
+
+class Convert_signal:
+    def __init__(self,signal):
+        self.signal = signal
+        self.ave = np.nanmean(self.signal,axis=0)
+        self.medi = np.nanmedian(self.signal,axis=0)
+    
+    def nan_to_ave(self):
+        no_nan_signal = np.nan_to_num(self.signal,nan=self.ave)
+        return no_nan_signal 
+    
+    def nan_to_medi(self):
+        no_nan_signal = np.nan_to_num(self.signal,nan=self.medi)
+        return no_nan_signal 
+
+    def zero_to_nan_to_ave(self):
+        self.signal[self.signal==0] = np.nan
+        converted_signal = self.nan_to_ave()
+        return converted_signal
+    
+    def zero_to_nan_to_medi(self):
+        self.signal[self.signal==0] = np.nan
+        converted_signal = self.nan_to_medi()
+        return converted_signal
+    
+    def outlier_to_nan_to_ave(self):
+        pass
+
 
 
 def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num):

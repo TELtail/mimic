@@ -66,7 +66,7 @@ def mk_dataset(data_pickle_path,age_json_path,minimum_signal_length,maximum_sign
         j+=1
         
         convert_signal = Convert_signal(tmp)
-        tmp = convert_signal.zero_to_nan_to_ave()
+        tmp = convert_signal.zero_to_nan_to_medi()
         axes[j].plot(range(len(tmp)),tmp[:,0:3])
         j+=1
 
@@ -77,15 +77,25 @@ def mk_dataset(data_pickle_path,age_json_path,minimum_signal_length,maximum_sign
 class Convert_signal:
     def __init__(self,signal):
         self.signal = signal
-        self.ave = np.nanmean(self.signal)
+        self.ave = np.nanmean(self.signal,axis=0)
+        self.medi = np.nanmedian(self.signal,axis=0)
     
     def nan_to_ave(self):
         no_nan_signal = np.nan_to_num(self.signal,nan=self.ave)
+        return no_nan_signal 
+    
+    def nan_to_medi(self):
+        no_nan_signal = np.nan_to_num(self.signal,nan=self.medi)
         return no_nan_signal 
 
     def zero_to_nan_to_ave(self):
         self.signal[self.signal==0] = np.nan
         converted_signal = self.nan_to_ave()
+        return converted_signal
+    
+    def zero_to_nan_to_medi(self):
+        self.signal[self.signal==0] = np.nan
+        converted_signal = self.nan_to_medi()
         return converted_signal
     
     def outlier_to_nan_to_ave(self):

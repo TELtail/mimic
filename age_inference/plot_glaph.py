@@ -46,7 +46,7 @@ def plot_age_histogram(data_t,out_path):
     ax_age.set_ylabel("Number of people")
     plt.rcParams["font.size"] = 30
     fig_age.savefig(hist_png_path)
-    mse_to_comparison(labels)
+    #mse_to_comparison(labels)
 
 def mse_to_comparison(labels):
     logger = log_start()
