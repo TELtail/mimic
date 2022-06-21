@@ -66,7 +66,7 @@ def nan_data_delete(data_signals_age,age_map,data_not_have_feature):
             del data_signals_age_zero_delete[key] #削除実行
     return data_signals_age_zero_delete,data_not_have_feature
 
-def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
+def mk_dataset(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
 
 
     with open(data_pickle_path,"rb") as f:
@@ -94,6 +94,13 @@ def mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_element
         data_t.append([one_data["age"]])
 
     plot_age_histogram(data_t,out_path)
+
+    return data_x,data_t
+
+def get_loader(data_x,data_t,train_rate,batch_size):
+    #input data_x (list)
+    #      data_t (list)
+
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割

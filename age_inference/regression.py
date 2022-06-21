@@ -6,7 +6,7 @@ from logging import getLogger,config
 import logging
 from common_utils import mk_out_dir,select_model,set_log_settings,define_seed,log_start
 from opts import print_parser,get_parser
-from datasets import mk_dataset
+from datasets import mk_dataset,get_loader
 from plot_glaph import plot_loss_glaph,plot_inference_result
 
 def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
@@ -67,7 +67,8 @@ def main():
     print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name)
 
     define_seed() #seed固定
-    trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
+    data_x,data_t = mk_dataset(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path)
+    trainloader,testloader = get_loader(data_x,data_t,train_rate,batch_size)
     num_axis = len(need_elements_list)
     net = select_model(model_name,num_axis,hidden_dim,num_layers,maximum_signal_length).to(device)
     logger.info(net)
