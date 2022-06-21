@@ -5,5 +5,5 @@ start.sh
 ssh_log
 shortcut
 __pycache__
-age_inference/__pycache__
+age_inference/__pycache__/
 demo
