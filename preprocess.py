@@ -10,7 +10,7 @@ def need_dataframes_get(data_pickle_path):
     signal_dataframes = {}
     delete_signal_names = []
     for signal_name,one_data in detailed_data.items():
-        one_signals = pd.DataFrame(detailed_data[signal_name][0],columns=detailed_data[signal_name][1]["sig_name"])
+        one_signals = pd.DataFrame(one_data[0],columns=one_data[1]["sig_name"])
         if set(["HR","RESP","SpO2"]) <=  set(one_signals.columns.values):
             signal_dataframes[signal_name] = one_signals[["HR","RESP","SpO2"]]
         else:
@@ -32,7 +32,7 @@ def main():
     signal_dataframes,delete_signal_names = need_dataframes_get(data_pickle_path)
 
     
-    
+
 
 if __name__ == "__main__":
     main()
