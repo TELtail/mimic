@@ -1,5 +1,5 @@
 import argparse
-import common_utils
+from common_utils import log_start
 
 
 
@@ -48,7 +48,7 @@ def print_parser(data_pickle_path,age_json_path,out_path,train_rate,
                 batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,
                 maximum_signal_length,need_elements_list,config_path,print_result_flag,
                 model_name):
-    logger = common_utils.log_start()
+    logger = log_start()
     logger.info("---------------------------------")
     logger.info("data_pickle_path:{}".format(data_pickle_path))
     logger.info("age_json_path:{}".format(age_json_path))

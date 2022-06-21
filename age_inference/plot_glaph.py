@@ -3,7 +3,7 @@ import os
 from logging import getLogger,config
 import numpy as np
 from sklearn.metrics import mean_squared_error
-import common_utils
+from common_utils import log_start
 
 
 def plot_inference_result(t_test,t_pred,out_path):
@@ -49,7 +49,7 @@ def plot_age_histogram(data_t,out_path):
     mse_to_comparison(labels)
 
 def mse_to_comparison(labels):
-    logger = common_utils.log_start()
+    logger = log_start()
     #一様分布、正規分布でのMSEの比較
     uniform = np.random.randint(20,90,len(labels))
     normal = np.random.normal(70,20,len(labels))

@@ -1,5 +1,4 @@
-
-import  age_inference as age
+import age_inference as age
 
 data_pickle_path = "./data/data.bin"
 age_json_path = "./data/age_data.json"

@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import datetime
 import os
-import mymodels
+from mymodels import *
 import json
 from logging import getLogger,config
 
@@ -27,11 +27,11 @@ def mk_out_dir(out_path):
 def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length):
     #モデル選択
     if model_name == "Lstm_net":
-        model = mymodels.Lstm_net(num_axis,hidden_dim,num_layers)
+        model = Lstm_net(num_axis,hidden_dim,num_layers)
     if model_name == "Conv1D_net":
-        model = mymodels.Conv1D_net(num_axis,hidden_dim,sig_length)
+        model = Conv1D_net(num_axis,hidden_dim,sig_length)
     if model_name == "Linear_net":
-        model = mymodels.Linear_net(num_axis,hidden_dim,num_layers,sig_length)
+        model = Linear_net(num_axis,hidden_dim,num_layers,sig_length)
     
     return model
 

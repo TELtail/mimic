@@ -4,10 +4,10 @@ import numpy as np
 import shutil
 from logging import getLogger,config
 import logging
-import common_utils
-import opts
-import datasets
-import plot_glaph
+from common_utils import mk_out_dir,select_model,set_log_settings,define_seed,log_start
+from opts import print_parser,get_parser
+from datasets import mk_dataset
+from plot_glaph import plot_loss_glaph,plot_inference_result
 
 def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
     running_loss = 0
@@ -53,23 +53,23 @@ def main():
     (data_pickle_path,age_json_path,out_path,train_rate,
     batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,
     maximum_signal_length,need_elements_list,config_path,print_result_flag,
-    model_name) =opts.get_parser()
-    out_path = common_utils.mk_out_dir(out_path)
+    model_name) = get_parser()
+    out_path = mk_out_dir(out_path)
     global logger
-    common_utils.set_log_settings(out_path,config_path)
-    logger = common_utils.log_start()
+    set_log_settings(out_path,config_path)
+    logger = log_start()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info("Device:{}".format(device))
     
     
 
-    opts.print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name)
+    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name)
 
-    common_utils.define_seed() #seed固定
-    trainloader,testloader = datasets.mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
+    define_seed() #seed固定
+    trainloader,testloader = mk_dataset(data_pickle_path,age_json_path,train_rate,batch_size,need_elements_list,minimum_signal_length,maximum_signal_length,out_path) #データローダー取得
     num_axis = len(need_elements_list)
-    net = common_utils.select_model(model_name,num_axis,hidden_dim,num_layers,maximum_signal_length).to(device)
+    net = select_model(model_name,num_axis,hidden_dim,num_layers,maximum_signal_length).to(device)
     logger.info(net)
 
     optimizer = torch.optim.Adam(net.parameters(),lr=lr)
@@ -85,8 +85,8 @@ def main():
         pass
 
     if len(epoch_loss) != 0:
-        plot_glaph.plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
-        plot_glaph.plot_inference_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
+        plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
+        plot_inference_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
     else:
         logging.shutdown()
         shutil.rmtree(out_path) #1エポックもなければディレクトリごと削除
