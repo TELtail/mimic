@@ -10,6 +10,8 @@ from plot_glaph import plot_age_histogram
 from common_utils import SEED
 from sklearn.model_selection import train_test_split
 import copy
+import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def mk_data_pickle(dataset_path):
@@ -92,17 +94,16 @@ def mk_dataset(data_pickle_path,age_json_path,need_elements_list,minimum_signal_
         tmp = torch.tensor(tmp) 
         data_x.append(tmp)
         data_t.append([one_data["age"]])
-
+    
     plot_age_histogram(data_t,out_path)
-
+    data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
+    data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     return data_x,data_t
 
 def get_loader(data_x,data_t,train_rate,batch_size):
-    #input data_x (list)
-    #      data_t (list)
-
-    data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
-    data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
+    #input data_x (tensor)
+    #      data_t (tensor)
+    
     train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
 
     dataset = torch.utils.data.TensorDataset(data_x,data_t)
@@ -162,3 +163,116 @@ def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num
         json.dump(delete_data,f,indent=4)
 
 
+
+def delete_from_pickle_to_dataframe(data_pickle_path):
+    with open(data_pickle_path,"rb") as f:
+        detailed_data = pickle.load(f) #信号データ
+    
+    signal_dataframes = {}
+
+    for signal_name,one_data in detailed_data.items():
+        one_signals = pd.DataFrame(one_data[0],columns=one_data[1]["sig_name"])
+        signal_dataframes[signal_name] = one_signals
+
+    
+    return signal_dataframes
+
+
+class Convert_Delete_signal_dataframes:
+    def __init__(self,signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length):
+        self.signals = signal_dataframes
+        self.delete_signal_names = {}
+        self.need_elements_list = need_elements_list
+        self.minimum_signal_length = minimum_signal_length
+        self.maximum_signal_length = maximum_signal_length
+    
+    def delete_signal_not_have_need_element_at_least(self):
+        deleteed_signals = copy.copy(self.signals) #一次的に変換後の信号を入れておくdf
+        self.delete_signal_names["not_have_need_element_at_least"] = []
+
+        for signal_name,signal in self.signals.items():
+            if set(["HR","RESP","SpO2"]) <=  set(list(signal.columns)): #指定要素を含むかどうか
+                deleteed_signals[signal_name] = signal[["HR","RESP","SpO2"]] #指定要素のみ抽出
+            else:
+                self.delete_signal_names["not_have_need_element_at_least"].append(signal_name) #削除した信号番号を保持
+                del deleteed_signals[signal_name] #指定要素を持たない信号を削除
+        
+        self.signals = deleteed_signals
+
+    def delete_signal_too_many_zero(self):
+        deleteed_signals = copy.copy(self.signals) #一次的に変換後の信号を入れておくdf
+        self.delete_signal_names["too_many_zero"] = []
+
+        for signal_name,signal in self.signals.items():
+            max_zero_num  = max((signal==0).sum())
+            if max_zero_num / len(signal) > 0.05:
+                self.delete_signal_names["too_many_zero"].append(signal_name)
+                del deleteed_signals[signal_name]
+        
+        self.signals = deleteed_signals
+    
+    def delete_signal_too_short(self):
+        deleteed_signals = copy.copy(self.signals) #一次的に変換後の信号を入れておくdf
+        self.delete_signal_names["too_short"] = []
+
+        for signal_name,signal in self.signals.items():
+            if len(signal) < self.minimum_signal_length:
+                self.delete_signal_names["too_short"].append(signal_name)
+                del deleteed_signals[signal_name]
+        
+        self.signals = deleteed_signals
+    
+    def convert_nan_to_ffill(self):
+        for signal_name,signal in self.signals.items():
+            self.signals[signal_name] = signal.fillna(method="ffill")
+    
+    def convert_zero_to_nan(self):
+        for signal_name,signal in self.signals.items():
+            signal[signal==0] = np.nan
+            self.signals[signal_name] = signal
+            
+
+    
+    def extract_need_elements_from_signals(self):
+        for signal_name,signal in self.signals.items():
+            self.signals[signal_name] = signal[self.need_elements_list]
+    
+    def shorten_long_signals(self):
+        for signal_name,signal in self.signals.items():
+            self.signals[signal_name] = signal.iloc[:self.maximum_signal_length,:]
+
+    def run(self):
+        self.delete_signal_not_have_need_element_at_least()
+        self.delete_signal_too_many_zero()
+        self.delete_signal_too_short()
+        #self.convert_zero_to_nan()
+        self.convert_nan_to_ffill()
+        self.extract_need_elements_from_signals()
+        self.shorten_long_signals()
+
+def associate_age_signals(signals,age_map):
+    data_x = []
+    data_t = []
+
+    for sig_name,sig in signals.items():
+        data_x.append(torch.tensor(sig.values,dtype=torch.float32))
+        data_t.append([age_map["data"][sig_name]["age"]])
+    return data_x,data_t
+
+
+def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
+    
+    signal_dataframes = delete_from_pickle_to_dataframe(data_pickle_path)
+    convert_cl = Convert_Delete_signal_dataframes(signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length)
+    convert_cl.run()
+
+    with open(age_json_path,"r") as g:
+        age_map = json.load(g) #年齢の対応データ
+    data_x,data_t = associate_age_signals(convert_cl.signals,age_map)
+    data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
+    data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
+    return data_x,data_t
+
+
+if __name__ == "__main__":
+    mk_dataset_v2("../data/data.bin","../data/age_data.json",["HR","RESP"],300,1500)
