@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error
 from common_utils import log_start
 
 
-def plot_inference_result(t_test,t_pred,out_path):
+def plot_regression_inference_result(t_test,t_pred,out_path):
     #最終テストの結果の散布図を作成
     result_fig = plt.figure(figsize=(12,9))
     result_ax = result_fig.add_subplot(111)
@@ -16,6 +16,16 @@ def plot_inference_result(t_test,t_pred,out_path):
     result_ax.set_xlabel('Correct Answer Label') # x軸ラベル
     result_ax.set_ylabel('Predicted Label') # y軸ラベル
     plt.savefig(os.path.join(out_path,"predict_result.png")) 
+
+def plot_classification_correct_result(correct_train,correct_test,out_path):
+    result_fig = plt.figure(figsize=(12,9))
+    result_ax = result_fig.add_subplot(111)
+    result_ax.plot(correct_train,label="Train Accuracy")
+    result_ax.plot(correct_test,label="Test Accuracy")
+    plt.rcParams["font.size"] = 30
+    result_ax.set_xlabel("Epoch")
+    result_ax.set_ylabel("Accuracy")
+    plt.savefig(os.path.join(out_path,"accuracy_result.png")) 
 
 
 def plot_loss_glaph(epoch_loss,out_path):
