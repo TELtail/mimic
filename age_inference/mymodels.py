@@ -2,12 +2,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class Lstm_net(nn.Module):
-    def __init__(self,num_axis,hidden_dim,num_layers,model_type):
+    def __init__(self,num_axis,hidden_dim,num_layers,model_type,out_dim):
         super(Lstm_net,self).__init__()
         self.hidden_dim = hidden_dim
         self.model_type = model_type
         self.lstm = nn.LSTM(num_axis,hidden_dim,num_layers,batch_first=True)
-        self.fc = nn.Linear(hidden_dim,1)
+        self.fc = nn.Linear(hidden_dim,out_dim)
         self.softmax = nn.Softmax(dim=1)
 
         
@@ -21,13 +21,13 @@ class Lstm_net(nn.Module):
         return x
 
 class Conv1D_net(nn.Module):
-    def __init__(self,num_axis,hidden_dim,sig_length,model_type):
+    def __init__(self,num_axis,hidden_dim,sig_length,model_type,out_dim):
         super(Conv1D_net,self).__init__()
         self.hidden_dim = hidden_dim
         self.model_type = model_type
         self.conv1 = nn.Conv1d(sig_length,hidden_dim,kernel_size=num_axis,stride=1)
         self.relu = nn.ReLU()
-        self.fc = nn.Linear(hidden_dim,1)
+        self.fc = nn.Linear(hidden_dim,out_dim)
         self.softmax = nn.Softmax(dim=1)
 
         
@@ -44,7 +44,7 @@ class Conv1D_net(nn.Module):
 
 
 class Linear_net(nn.Module):
-    def __init__(self,num_axis,hidden_dim,num_layers,sig_length,model_type):
+    def __init__(self,num_axis,hidden_dim,num_layers,sig_length,model_type,out_dim):
         super(Linear_net,self).__init__()
         self.hidden_dim = hidden_dim
         self.model_type = model_type
@@ -53,7 +53,7 @@ class Linear_net(nn.Module):
         self.sig_length = sig_length
         self.fc_start = nn.Linear(num_axis*sig_length,hidden_dim) 
         self.fc_bet = nn.Linear(hidden_dim,hidden_dim)
-        self.fc_end = nn.Linear(hidden_dim,1)
+        self.fc_end = nn.Linear(hidden_dim,out_dim)
         self.softmax = nn.Softmax(dim=1)
 
         self.dropout = nn.Dropout(0.25)

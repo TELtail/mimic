@@ -66,8 +66,12 @@ def main_method():
     define_seed() #seed固定
     data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path,args.model_type)
     trainloader,testloader = get_loader(data_x,data_t,args.train_rate,args.batch_size)
+    if args.model_type == "regression":
+        out_dim = 1
+    elif args.model_type == "classification":
+        out_dim = 2
     num_axis = len(args.need_elements_list)
-    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,args.model_type).to(device)
+    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,args.model_type,out_dim).to(device)
     logger.info(net)
 
     optimizer = torch.optim.Adam(net.parameters(),lr=args.lr)
