@@ -49,11 +49,11 @@ def test_method(testloader,net,loss_fn,device,print_result_flag):
 
 
 
-def main():
+def main_method():
     (data_pickle_path,age_json_path,out_path,train_rate,
     batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,
     maximum_signal_length,need_elements_list,config_path,print_result_flag,
-    model_name) = get_parser()
+    model_name,debug_flag) = get_parser()
     out_path = mk_out_dir(out_path)
     global logger
     set_log_settings(out_path,config_path)
@@ -85,7 +85,7 @@ def main():
     except KeyboardInterrupt:
         pass
 
-    if len(epoch_loss) != 0:
+    if len(epoch_loss) != 0 and debug_flag != True:
         plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
         plot_inference_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
     else:
@@ -94,4 +94,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main_method()

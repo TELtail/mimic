@@ -20,6 +20,7 @@ def get_parser():
     parser.add_argument("--config",help="log_config.jsonのpath指定",default="./log_config.json")
     parser.add_argument("--print_result",help="test結果をprintするかどうか",action='store_true')
     parser.add_argument("--model_name",help="使用するモデル名を指定",default="Lstm_net")
+    parser.add_argument("--debug",help="デバッグ中を示す。結果の保存を行わない",action="store_true")
 
     args = parser.parse_args()
 
@@ -38,11 +39,12 @@ def get_parser():
     config_path = args.config
     print_result_flag = args.print_result
     model_name = args.model_name
+    debug_flag = args.debug
 
 
     return (data_pickle_path,age_json_path,out_path,train_rate,batch_size,
             hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,
-            need_elements_list,config_path,print_result_flag,model_name)
+            need_elements_list,config_path,print_result_flag,model_name,debug_flag)
 
 def print_parser(data_pickle_path,age_json_path,out_path,train_rate,
                 batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,

@@ -4,4 +4,4 @@ from .mymodels import *
 from .mymodels import *
 from .opts import *
 from .plot_glaph import *
-from .regression import *
+from .main import *
