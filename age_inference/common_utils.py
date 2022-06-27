@@ -51,3 +51,14 @@ def log_start():
     config.dictConfig(log_config)
     logger = getLogger(__name__)
     return logger
+
+
+def determing_setting(model_type):
+    if model_type == "regression":
+        out_dim = 1
+        loss_fn = nn.MSELoss()
+    elif model_type == "classification":
+        out_dim = 2
+        loss_fn = nn.CrossEntropyLoss()
+    
+    return out_dim,loss_fn

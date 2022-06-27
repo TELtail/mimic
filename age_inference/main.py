@@ -4,48 +4,13 @@ import numpy as np
 import shutil
 from logging import getLogger,config
 import logging
-from common_utils import mk_out_dir,select_model,set_log_settings,define_seed,log_start
+from common_utils import mk_out_dir,select_model,set_log_settings,define_seed,log_start,determing_setting
 from opts import print_parser,get_parser
 from datasets import mk_dataset,get_loader,mk_dataset_v2
 from plot_glaph import plot_loss_glaph,plot_inference_result
+from train_test_loop_method import test_method,train_method
 
-def train_method(trainloader,net,optimizer,loss_fn,device,batch_size):
-    running_loss = 0
-    size = len(trainloader.dataset)
-    for i,(inputs,labels) in enumerate(trainloader):
-        optimizer.zero_grad() #勾配初期化
-        inputs,labels = inputs.to(device),labels.to(device)
-        outputs = net(inputs)
-        loss = loss_fn(outputs,labels.float())
-        running_loss += loss.item()
-        loss.backward()
-        optimizer.step()
-        if i%10 == 0:
-            logger.info(f" {i}/{int(size/batch_size)} loss:{loss}")
-    
-    running_loss /= (i+1)
-    logger.info(f"train_loss:{running_loss}")
 
-    return running_loss
-
-def test_method(testloader,net,loss_fn,device,print_result_flag):
-    running_loss = 0
-    predicted_for_plot = []
-    for i,(inputs,labels) in enumerate(testloader):
-        inputs,labels = inputs.to(device),labels.to(device)
-        outputs = net(inputs)
-        if print_result_flag:
-            logger.info(outputs)
-        loss = loss_fn(outputs,labels.float())
-        outputs_np = outputs.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
-        labels_np = labels.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
-        predicted_for_plot.append([outputs_np,labels_np])
-        running_loss += loss.item()
-    
-    running_loss /= (i+1)
-    logger.info(f"test_loss:{running_loss}")
-
-    return running_loss,np.array(predicted_for_plot)
 
 
 
@@ -66,19 +31,12 @@ def main_method():
     define_seed() #seed固定
     data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path,args.model_type)
     trainloader,testloader = get_loader(data_x,data_t,args.train_rate,args.batch_size)
-    if args.model_type == "regression":
-        out_dim = 1
-    elif args.model_type == "classification":
-        out_dim = 2
+    out_dim,loss_fn = determing_setting(args.model_type)
     num_axis = len(args.need_elements_list)
     net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,args.model_type,out_dim).to(device)
     logger.info(net)
 
     optimizer = torch.optim.Adam(net.parameters(),lr=args.lr)
-    if args.model_type == "regression":
-        loss_fn = nn.MSELoss()
-    elif args.model_type == "classification":
-        loss_fn = nn.CrossEntropyLoss()
     epoch_loss = [] #グラフに出力するための損失格納用リスト
     try:
         for epoch in range(args.epochs):
