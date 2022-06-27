@@ -8,7 +8,7 @@ from common_utils import mk_out_dir,select_model,set_log_settings,define_seed,lo
 from opts import print_parser,get_parser
 from datasets import mk_dataset,get_loader,mk_dataset_v2
 from plot_glaph import plot_loss_glaph,plot_inference_result
-from train_test_loop_method import test_method,train_method
+from train_test_loop_method import test_regression_method,train_regression_method,train_classification_method,test_classification_method
 
 
 
@@ -41,8 +41,12 @@ def main_method():
     try:
         for epoch in range(args.epochs):
             logger.info(f"----- epoch:{epoch+1} ---------------------------")
-            train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,args.batch_size)
-            test_running_loss,predicted_for_plot = test_method(testloader,net,loss_fn,device,args.print_result_flag)
+            if args.model_type == "regression":
+                train_running_loss = train_regression_method(trainloader,net,optimizer,loss_fn,device,args.batch_size)
+                test_running_loss,predicted_for_plot = test_regression_method(testloader,net,loss_fn,device,args.print_result_flag)
+            elif args.model_type == "classification":
+                train_running_loss = train_classification_method(trainloader,net,optimizer,loss_fn,device,args.batch_size)
+                test_running_loss,predicted_for_plot = test_classification_method(testloader,net,loss_fn,device,args.print_result_flag)
             epoch_loss.append([train_running_loss,test_running_loss])
     except KeyboardInterrupt:
         pass

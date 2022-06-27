@@ -281,7 +281,6 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     if model_type == "classification":
         data_t = categorize_dataset_for_classification(data_t)
-    print(data_t)
     return data_x,data_t
 
 
