@@ -9,11 +9,14 @@ class Lstm_net(nn.Module):
         self.lstm = nn.LSTM(num_axis,hidden_dim,num_layers,batch_first=True)
         self.fc = nn.Linear(hidden_dim,out_dim)
         self.softmax = nn.Softmax(dim=1)
+        self.dropout = nn.Dropout(0.25)
 
         
     def forward(self,x):
+        x = self.dropout(x)
         _,x = self.lstm(x)
         x = x[0][-1].view(-1, self.hidden_dim)
+        x = self.dropout(x)
         x = self.fc(x)
         if self.model_type == "classification":
             x = self.softmax(x)
@@ -29,11 +32,14 @@ class Conv1D_net(nn.Module):
         self.relu = nn.ReLU()
         self.fc = nn.Linear(hidden_dim,out_dim)
         self.softmax = nn.Softmax(dim=1)
+        self.dropout = nn.Dropout(0.25)
 
         
     def forward(self,x):
+        x = self.dropout(x)
         x = self.relu(self.conv1(x))
         x = x.view(-1,self.hidden_dim)
+        x = self.dropout(x)
         x = self.fc(x)
         if self.model_type == "classification":
             x = self.softmax(x)
