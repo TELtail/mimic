@@ -260,8 +260,9 @@ def associate_age_signals(signals,age_map):
     return data_x,data_t
 
 def categorize_dataset_for_classification(data_t):
+    med = torch.median(data_t[:,0])
     for i,age in enumerate(data_t):
-        if age[0] < 64:
+        if age[0] < med:
             data_t[i][0] = 0
         else:
             data_t[i][0] = 1

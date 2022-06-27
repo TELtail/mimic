@@ -10,7 +10,7 @@ def plot_regression_inference_result(t_test,t_pred,out_path):
     #最終テストの結果の散布図を作成
     result_fig = plt.figure(figsize=(12,9))
     result_ax = result_fig.add_subplot(111)
-    result_ax.plot(t_test, t_test, color = 'red', label = 'x=y') # 直線y = x (真値と予測値が同じ場合は直線状に点がプロットされる)
+    result_ax.plot(t_test, t_test, color = 'red') # 直線y = x (真値と予測値が同じ場合は直線状に点がプロットされる)
     result_ax.scatter(t_test, t_pred) # 散布図のプロット
     plt.rcParams["font.size"] = 30
     result_ax.set_xlabel('Correct Answer Label') # x軸ラベル
@@ -25,6 +25,7 @@ def plot_classification_correct_result(correct_train,correct_test,out_path):
     plt.rcParams["font.size"] = 30
     result_ax.set_xlabel("Epoch")
     result_ax.set_ylabel("Accuracy")
+    plt.legend()
     plt.savefig(os.path.join(out_path,"accuracy_result.png")) 
 
 
