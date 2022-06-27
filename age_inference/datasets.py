@@ -259,8 +259,16 @@ def associate_age_signals(signals,age_map):
         data_t.append([age_map["data"][sig_name]["age"]])
     return data_x,data_t
 
+def categorize_dataset_for_classification(data_t):
+    for i,age in enumerate(data_t):
+        if age[0] < 64:
+            data_t[i][0] = 0
+        else:
+            data_t[i][0] = 1
+    
+    return data_t
 
-def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
+def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type):
     
     signal_dataframes = delete_from_pickle_to_dataframe(data_pickle_path)
     convert_cl = Convert_Delete_signal_dataframes(signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length)
@@ -271,6 +279,9 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
     data_x,data_t = associate_age_signals(convert_cl.signals,age_map)
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
+    if model_type == "classification":
+        data_t = categorize_dataset_for_classification(data_t)
+    print(data_t)
     return data_x,data_t
 
 

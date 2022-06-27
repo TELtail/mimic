@@ -24,14 +24,14 @@ def mk_out_dir(out_path):
 
 
 
-def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length):
+def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length,model_type):
     #モデル選択
     if model_name == "Lstm_net":
-        model = Lstm_net(num_axis,hidden_dim,num_layers)
+        model = Lstm_net(num_axis,hidden_dim,num_layers,model_type)
     if model_name == "Conv1D_net":
-        model = Conv1D_net(num_axis,hidden_dim,sig_length)
+        model = Conv1D_net(num_axis,hidden_dim,sig_length,model_type)
     if model_name == "Linear_net":
-        model = Linear_net(num_axis,hidden_dim,num_layers,sig_length)
+        model = Linear_net(num_axis,hidden_dim,num_layers,sig_length,model_type)
     
     return model
 

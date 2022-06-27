@@ -64,14 +64,17 @@ def main_method():
     print_parser(args)
 
     define_seed() #seed固定
-    data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path)
+    data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path,args.model_type)
     trainloader,testloader = get_loader(data_x,data_t,args.train_rate,args.batch_size)
     num_axis = len(args.need_elements_list)
-    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length).to(device)
+    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,args.model_type).to(device)
     logger.info(net)
 
     optimizer = torch.optim.Adam(net.parameters(),lr=args.lr)
-    loss_fn = nn.MSELoss()
+    if args.model_type == "regression":
+        loss_fn = nn.MSELoss()
+    elif args.model_type == "classification":
+        loss_fn = nn.CrossEntropyLoss()
     epoch_loss = [] #グラフに出力するための損失格納用リスト
     try:
         for epoch in range(args.epochs):
