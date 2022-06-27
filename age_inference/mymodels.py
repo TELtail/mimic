@@ -13,10 +13,10 @@ class Lstm_net(nn.Module):
 
         
     def forward(self,x):
-        x = self.dropout(x)
+        #x = self.dropout(x)
         _,x = self.lstm(x)
         x = x[0][-1].view(-1, self.hidden_dim)
-        x = self.dropout(x)
+        #x = self.dropout(x)
         x = self.fc(x)
         if self.model_type == "classification":
             x = self.softmax(x)
@@ -36,10 +36,10 @@ class Conv1D_net(nn.Module):
 
         
     def forward(self,x):
-        x = self.dropout(x)
+        #x = self.dropout(x)
         x = self.relu(self.conv1(x))
         x = x.view(-1,self.hidden_dim)
-        x = self.dropout(x)
+        #x = self.dropout(x)
         x = self.fc(x)
         if self.model_type == "classification":
             x = self.softmax(x)
@@ -66,11 +66,11 @@ class Linear_net(nn.Module):
     
     def forward(self,x):
         x = x.view(-1,self.num_axis*self.sig_length)
-        self.dropout(x)
+        #self.dropout(x)
         x = F.relu(self.fc_start(x))
         for i in range(self.num_layers-2):
             x = F.relu(self.fc_bet(x))
-            self.dropout(x)
+            #self.dropout(x)
         x = self.fc_end(x)
         if self.model_type == "classification":
             x = self.softmax(x)
