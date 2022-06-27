@@ -6,7 +6,7 @@ from common_utils import log_start
 def get_parser():
     parser = argparse.ArgumentParser("MIMIC-IIデータセットで年齢の学習、推論を行うプログラム")
     parser.add_argument("--data_path",help="信号のバイナリデータのパス")
-    parser.add_argument("--age_path",help="年齢のバイナリデータのパス")
+    parser.add_argument("--age_path",help="年齢のjsonデータのパス")
     parser.add_argument("--out_path",help="グラフ等を出力するパス",default="../out")
     parser.add_argument("--train_rate",help="学習データの割合",type=float,default=0.8)
     parser.add_argument("--batch_size",help="バッチサイズ",type=int,default=8)

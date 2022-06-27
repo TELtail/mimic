@@ -228,7 +228,7 @@ class Convert_Delete_signal_dataframes:
     
     def convert_zero_to_nan(self):
         for signal_name,signal in self.signals.items():
-            signal[signal==0] = np.nan
+            signal.replace(0,np.nan)
             self.signals[signal_name] = signal
             
 
@@ -245,7 +245,7 @@ class Convert_Delete_signal_dataframes:
         self.delete_signal_not_have_need_element_at_least()
         self.delete_signal_too_many_zero()
         self.delete_signal_too_short()
-        #self.convert_zero_to_nan()
+        self.convert_zero_to_nan()
         self.convert_nan_to_ffill()
         self.extract_need_elements_from_signals()
         self.shorten_long_signals()
