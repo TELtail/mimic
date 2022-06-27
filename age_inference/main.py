@@ -50,13 +50,10 @@ def test_method(testloader,net,loss_fn,device,print_result_flag):
 
 
 def main_method():
-    (data_pickle_path,age_json_path,out_path,train_rate,
-    batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,
-    maximum_signal_length,need_elements_list,config_path,print_result_flag,
-    model_name,debug_flag) = get_parser()
-    out_path = mk_out_dir(out_path)
+    args = get_parser()
+    out_path = mk_out_dir(args.out_path)
     global logger
-    set_log_settings(out_path,config_path)
+    set_log_settings(out_path,args.config_path)
     logger = log_start()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -64,28 +61,28 @@ def main_method():
     
     
 
-    print_parser(data_pickle_path,age_json_path,out_path,train_rate,batch_size,hidden_dim,num_layers,epochs,lr,minimum_signal_length,maximum_signal_length,need_elements_list,config_path,print_result_flag,model_name)
+    print_parser(args)
 
     define_seed() #seed固定
-    data_x,data_t = mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path)
-    trainloader,testloader = get_loader(data_x,data_t,train_rate,batch_size)
-    num_axis = len(need_elements_list)
-    net = select_model(model_name,num_axis,hidden_dim,num_layers,maximum_signal_length).to(device)
+    data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path)
+    trainloader,testloader = get_loader(data_x,data_t,args.train_rate,args.batch_size)
+    num_axis = len(args.need_elements_list)
+    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length).to(device)
     logger.info(net)
 
-    optimizer = torch.optim.Adam(net.parameters(),lr=lr)
+    optimizer = torch.optim.Adam(net.parameters(),lr=args.lr)
     loss_fn = nn.MSELoss()
     epoch_loss = [] #グラフに出力するための損失格納用リスト
     try:
-        for epoch in range(epochs):
+        for epoch in range(args.epochs):
             logger.info(f"----- epoch:{epoch+1} ---------------------------")
-            train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,batch_size)
-            test_running_loss,predicted_for_plot = test_method(testloader,net,loss_fn,device,print_result_flag)
+            train_running_loss = train_method(trainloader,net,optimizer,loss_fn,device,args.batch_size)
+            test_running_loss,predicted_for_plot = test_method(testloader,net,loss_fn,device,args.print_result_flag)
             epoch_loss.append([train_running_loss,test_running_loss])
     except KeyboardInterrupt:
         pass
 
-    if len(epoch_loss) != 0 and debug_flag != True:
+    if len(epoch_loss) != 0 and args.debug_flag != True:
         plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
         plot_inference_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
     else:
