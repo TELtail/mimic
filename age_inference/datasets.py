@@ -225,8 +225,8 @@ class Convert_Delete_signal_dataframes:
     def convert_nan_to_ffill(self):
         for signal_name,signal in self.signals.items():
             self.signals[signal_name] = signal.fillna(method="ffill")
-            self.signals[signal_name].plot()
-            plt.show()
+            if np.isnan(np.array(self.signals[signal_name])).sum() != 0:
+                self.signals[signal_name] = self.signals[signal_name].fillna(method="bfill")
     
     def convert_zero_to_nan(self):
         for signal_name,signal in self.signals.items():
@@ -274,8 +274,8 @@ class Convert_Delete_signal_dataframes:
         self.convert_zero_to_nan()
         #self.segmentating_signals_that_zero_continous_for_a_long_time()
         self.convert_nan_to_ffill()
-        #self.extract_need_elements_from_signals()
-        #self.shorten_long_signals()
+        self.extract_need_elements_from_signals()
+        self.shorten_long_signals()
 
 def associate_age_signals(signals,age_map):
     data_x = []
