@@ -24,14 +24,20 @@ def mk_out_dir(out_path):
 
 
 
-def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length,model_type,out_dim):
+def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length,out_dim):
     #モデル選択
-    if model_name == "Lstm_net":
-        model = Lstm_net(num_axis,hidden_dim,num_layers,model_type,out_dim)
-    if model_name == "Conv1D_net":
-        model = Conv1D_net(num_axis,hidden_dim,sig_length,model_type,out_dim)
-    if model_name == "Linear_net":
-        model = Linear_net(num_axis,hidden_dim,num_layers,sig_length,model_type,out_dim)
+    if model_name == "Lstm_regression_net":
+        model = Lstm_regression_net(num_axis,hidden_dim,num_layers,out_dim)
+    if model_name == "Lstm_classification_net":
+        model = Lstm_classification_net(num_axis,hidden_dim,num_layers,out_dim)
+    if model_name == "Conv1D_regression_net":
+        model = Conv1D_regression_net(num_axis,hidden_dim,sig_length,out_dim)
+    if model_name == "Conv1D_classification_net":
+        model = Conv1D_classification_net(num_axis,hidden_dim,sig_length,out_dim)
+    if model_name == "Linear_regression_net":
+        model = Linear_regression_net(num_axis,hidden_dim,num_layers,sig_length,out_dim)
+    if model_name == "Linear_classification_net":
+        model = Linear_classification_net(num_axis,hidden_dim,num_layers,sig_length,out_dim)
     
     return model
 

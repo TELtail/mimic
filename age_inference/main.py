@@ -24,16 +24,16 @@ def main_method():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info("Device:{}".format(device))
     
-    
+    model_type = args.model_name.split("_")[1]
 
     print_parser(args) #取得したコマンドライン引数を表示
 
     define_seed() #seed固定
-    data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path,args.model_type)
+    data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path,model_type)
     trainloader,testloader = get_loader(data_x,data_t,args.train_rate,args.batch_size)
-    out_dim,loss_fn = determing_setting(args.model_type) #モデルタイプに対応したモデルの出力次元と損失関数を決定 
+    out_dim,loss_fn = determing_setting(model_type) #モデルタイプに対応したモデルの出力次元と損失関数を決定 
     num_axis = len(args.need_elements_list) #入力次元数を決定
-    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,args.model_type,out_dim).to(device) #指定されたモデルを呼び出し
+    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,out_dim).to(device) #指定されたモデルを呼び出し
     logger.info(net) #モデル情報出力
 
     optimizer = torch.optim.Adam(net.parameters(),lr=args.lr)
@@ -42,10 +42,10 @@ def main_method():
     try:
         for epoch in range(args.epochs):
             logger.info(f"----- epoch:{epoch+1} ---------------------------")
-            if args.model_type == "regression": #回帰
+            if model_type == "regression": #回帰
                 train_running_loss = train_regression_method(trainloader,net,optimizer,loss_fn,device,args.batch_size) #学習
                 test_running_loss,predicted_for_plot = test_regression_method(testloader,net,loss_fn,device,args.print_result_flag) #テスト
-            elif args.model_type == "classification": #分類
+            elif model_type == "classification": #分類
                 train_running_loss,train_correct = train_classification_method(trainloader,net,optimizer,loss_fn,device,args.batch_size) #学習
                 test_running_loss,test_correct = test_classification_method(testloader,net,loss_fn,device,args.print_result_flag) #テスト
                 correct_for_classification.append([train_correct,test_correct]) #分類問題の結果を格納
@@ -55,9 +55,9 @@ def main_method():
 
     if len(epoch_loss) != 0 and args.debug_flag != True:
         plot_loss_glaph(epoch_loss,out_path) #1エポックでもあれば損失グラフ生成
-        if args.model_type == "regression":
+        if model_type == "regression":
             plot_regression_inference_result(predicted_for_plot[:,1],predicted_for_plot[:,0],out_path) #最後のテスト結果をプロット
-        elif args.model_type == "classification":
+        elif model_type == "classification":
             correct_for_classification = np.array(correct_for_classification)
             plot_classification_correct_result(correct_for_classification[:,0],correct_for_classification[:,1],out_path) #分類時の正答率の変遷グラフを作成
     else:

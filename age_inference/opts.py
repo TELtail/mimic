@@ -19,9 +19,8 @@ def get_parser():
     parser.add_argument("--need_elements_list",help="必要な要素名",nargs="*",default=['HR', 'RESP', 'SpO2'])
     parser.add_argument("--config_path",help="log_config.jsonのpath指定",default="./log_config.json")
     parser.add_argument("--print_result_flag",help="test結果をprintするかどうか",action='store_true')
-    parser.add_argument("--model_name",help="使用するモデル名を指定",default="Lstm_net",choices=["Lstm_net","Conv1D_net","Linear_net"])
+    parser.add_argument("--model_name",help="使用するモデル名を指定",default="Lstm_regression_net",choices=["Lstm_regression_net","Lstm_classification_net","Conv1D_regression_net","Conv1D_classification_net","Linear_regression_net","Linear_classification_net"])
     parser.add_argument("--debug_flag",help="デバッグ中を示す。結果の保存を行わない",action="store_true")
-    parser.add_argument("--model_type",help="回帰か分類かを選択",default="regression",choices=["regression","classification"])
 
     args = parser.parse_args()
 
@@ -45,5 +44,4 @@ def print_parser(args):
     logger.info("need_elements_list:{}".format(args.need_elements_list))
     logger.info("print_result_flag:{}".format(args.print_result_flag))
     logger.info("model_name:{}".format(args.model_name))
-    logger.info("model_type:{}".format(args.model_type))
     logger.info("---------------------------------")
