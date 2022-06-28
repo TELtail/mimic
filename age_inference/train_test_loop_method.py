@@ -56,8 +56,7 @@ def train_classification_method(trainloader,net,optimizer,loss_fn,device,batch_s
         optimizer.zero_grad() #勾配初期化
         inputs,labels = inputs.to(device),labels.to(device)
         outputs = net(inputs)
-        labels = torch.flatten(labels)
-        loss = loss_fn(outputs,labels)
+        loss = loss_fn(outputs,labels.float())
         running_loss += loss.item()
         correct += (outputs.argmax(1)==labels).sum().item()
         loss.backward()
@@ -80,10 +79,9 @@ def test_classification_method(testloader,net,loss_fn,device,print_result_flag):
     for i,(inputs,labels) in enumerate(testloader):
         inputs,labels = inputs.to(device),labels.to(device)
         outputs = net(inputs)
-        labels = torch.flatten(labels)
         if print_result_flag:
             logger.info(outputs)
-        loss = loss_fn(outputs,labels)
+        loss = loss_fn(outputs,labels.float())
         outputs_np = outputs.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
         labels_np = labels.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
         running_loss += loss.item()

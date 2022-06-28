@@ -19,7 +19,7 @@ class Lstm_classification_net(nn.Module):
         super(Lstm_classification_net,self).__init__()
         self.hidden_dim = hidden_dim
         self.lstm = nn.LSTM(num_axis,hidden_dim,num_layers,batch_first=True)
-        self.fc = nn.Linear(hidden_dim,out_dim)
+        self.fc = nn.Linear(hidden_dim,1)
         self.dropout = nn.Dropout(0.25)
 
     def forward(self,x):
@@ -50,7 +50,7 @@ class Conv1D_classification_net(nn.Module):
         self.hidden_dim = hidden_dim
         self.conv1 = nn.Conv1d(sig_length,hidden_dim,kernel_size=num_axis,stride=1)
         self.sigmoid = nn.Sigmoid()
-        self.fc = nn.Linear(hidden_dim,out_dim)
+        self.fc = nn.Linear(hidden_dim,1)
         self.dropout = nn.Dropout(0.25)
 
         
