@@ -23,7 +23,7 @@ def main_method():
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info("Device:{}".format(device))
-    
+    logger.info("out_path:{}".format(out_path))
     
 
     print_parser(args) #取得したコマンドライン引数を表示
