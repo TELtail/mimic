@@ -225,12 +225,37 @@ class Convert_Delete_signal_dataframes:
     def convert_nan_to_ffill(self):
         for signal_name,signal in self.signals.items():
             self.signals[signal_name] = signal.fillna(method="ffill")
+            self.signals[signal_name].plot()
+            plt.show()
     
     def convert_zero_to_nan(self):
         for signal_name,signal in self.signals.items():
-            signal.replace(0,np.nan)
+            signal = signal.where(signal>1,np.nan)
             self.signals[signal_name] = signal
+    
+    def segmentating_signals_that_zero_continous_for_a_long_time(self):
+        for signal_name,signal in self.signals.items():
+            signal = np.array(signal)
+            isnan_tuple = np.where(np.isnan(signal)) #np.nanを持つインデックスを取得
+            indexes = []
+            for i,j in zip(isnan_tuple[0],isnan_tuple[1]):
+                indexes.append([i,j]) 
             
+            continue_indexes = []
+            i=0
+            while(i<len(indexes)):
+                continue_times=0
+                while([indexes[i][0]+continue_times,indexes[i][1]] in indexes):
+                    continue_times+=1
+                continue_indexes.append([indexes[i][0],continue_times])
+                i+=continue_times
+            print(continue_indexes)
+            
+
+
+
+
+
 
     
     def extract_need_elements_from_signals(self):
@@ -240,15 +265,17 @@ class Convert_Delete_signal_dataframes:
     def shorten_long_signals(self):
         for signal_name,signal in self.signals.items():
             self.signals[signal_name] = signal.iloc[:self.maximum_signal_length,:]
+    
 
     def run(self):
         self.delete_signal_not_have_need_element_at_least()
         self.delete_signal_too_many_zero()
         self.delete_signal_too_short()
         self.convert_zero_to_nan()
+        #self.segmentating_signals_that_zero_continous_for_a_long_time()
         self.convert_nan_to_ffill()
-        self.extract_need_elements_from_signals()
-        self.shorten_long_signals()
+        #self.extract_need_elements_from_signals()
+        #self.shorten_long_signals()
 
 def associate_age_signals(signals,age_map):
     data_x = []
