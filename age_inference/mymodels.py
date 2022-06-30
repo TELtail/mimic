@@ -20,11 +20,13 @@ class Lstm_classification_net(nn.Module):
         self.hidden_dim = hidden_dim
         self.lstm = nn.LSTM(num_axis,hidden_dim,num_layers,batch_first=True)
         self.fc = nn.Linear(hidden_dim,out_dim)
-        self.dropout = nn.Dropout(0.25)
+        self.dropout = nn.Dropout(0.1)
 
     def forward(self,x):
+        x = self.dropout(x)
         _,x = self.lstm(x)
         x = x[0][-1].view(-1, self.hidden_dim)
+        x = self.dropout(x)
         x = self.fc(x)
         return x
 

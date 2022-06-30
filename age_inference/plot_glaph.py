@@ -20,8 +20,8 @@ def plot_regression_inference_result(t_test,t_pred,out_path):
 def plot_classification_correct_result(correct_train,correct_test,out_path):
     result_fig = plt.figure(figsize=(12,9))
     result_ax = result_fig.add_subplot(111)
-    result_ax.plot(correct_train,label="Train Accuracy")
-    result_ax.plot(correct_test,label="Test Accuracy")
+    result_ax.plot(correct_train,label="Train")
+    result_ax.plot(correct_test,label="Test")
     plt.rcParams["font.size"] = 30
     result_ax.set_xlabel("Epoch")
     result_ax.set_ylabel("Accuracy")
