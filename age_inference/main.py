@@ -30,8 +30,10 @@ def main_method():
     print_parser(args) #取得したコマンドライン引数を表示
 
     define_seed() #seed固定
-    data_x,data_t = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,args.minimum_signal_length,args.maximum_signal_length,out_path,model_type)
-    trainloader,testloader = get_loader(data_x,data_t,args.train_rate,args.batch_size)
+    data_x,data_t,train_indices,test_indices = mk_dataset_v2(args.data_pickle_path,args.age_json_path,args.need_elements_list,
+                                                            args.minimum_signal_length,args.maximum_signal_length,out_path,
+                                                            model_type,args.train_rate,args.splited_one_signal_length)
+    trainloader,testloader = get_loader(data_x,data_t,args.train_rate,args.batch_size,train_indices,test_indices)
     logger.info("train:{} test:{}".format(len(trainloader.dataset),len(testloader.dataset)))
     out_dim,loss_fn = determing_setting(model_type) #モデルタイプに対応したモデルの出力次元と損失関数を決定 
     loss_fn = loss_fn.to(device)

@@ -100,11 +100,11 @@ def mk_dataset(data_pickle_path,age_json_path,need_elements_list,minimum_signal_
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     return data_x,data_t
 
-def get_loader(data_x,data_t,train_rate,batch_size):
+def get_loader(data_x,data_t,train_rate,batch_size,train_indices,test_indices):
     #input data_x (tensor)
     #      data_t (tensor)
-    
-    train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
+    if train_indices == None and test_indices == None:
+        train_indices, test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
 
     dataset = torch.utils.data.TensorDataset(data_x,data_t)
 
@@ -277,12 +277,15 @@ class Convert_Delete_signal_dataframes:
         self.extract_need_elements_from_signals()
         self.shorten_long_signals()
 
-def associate_age_signals(signals,age_map):
+def associate_age_signals(signals,age_map,splited_one_signal_length):
     data_x = []
     data_t = []
 
     for sig_name,sig in signals.items():
-        data_x.append(torch.tensor(sig.values,dtype=torch.float32))
+        if splited_one_signal_length:
+            data_x.append(np.array(sig.values))
+        else:
+            data_x.append(torch.tensor(sig.values,dtype=torch.float32))
         data_t.append([age_map["data"][sig_name]["age"]])
     return data_x,data_t
 
@@ -296,7 +299,29 @@ def categorize_dataset_for_classification(data_t):
     
     return data_t
 
-def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type):
+def split_signals(data_x,data_t,train_rate,splited_one_signal_length): #信号分割を行う
+    train_indices,test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
+    new_data_x = []
+    new_data_t = []
+    for idx in train_indices:
+        for start in range(0,len(data_x[idx]),splited_one_signal_length):
+            new_data_x.append(torch.tensor(data_x[idx][start:start+splited_one_signal_length],dtype=torch.float32)) #splited_one_signal_lengthの数ごとに分割
+            new_data_t.append(data_t[idx]) #対応するラベル取得
+    
+    train_size = len(new_data_t)
+    new_train_indices = range(0,train_size)
+    
+    for idx in test_indices:
+        for start in range(0,len(data_x[idx]),splited_one_signal_length):
+            new_data_x.append(torch.tensor(data_x[idx][start:start+splited_one_signal_length],dtype=torch.float32)) #splited_one_signal_lengthの数ごとに分割
+            new_data_t.append(data_t[idx]) #対応するラベル取得
+    
+    new_test_indices = range(train_size,len(new_data_t))
+
+    return new_data_x,new_data_t,new_train_indices,new_test_indices
+
+
+def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type,train_rate,splited_one_signal_length):
     
     signal_dataframes = delete_from_pickle_to_dataframe(data_pickle_path)
     convert_cl = Convert_Delete_signal_dataframes(signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length)
@@ -304,12 +329,17 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
 
     with open(age_json_path,"r") as g:
         age_map = json.load(g) #年齢の対応データ
-    data_x,data_t = associate_age_signals(convert_cl.signals,age_map)
+    data_x,data_t = associate_age_signals(convert_cl.signals,age_map,splited_one_signal_length)
+    if splited_one_signal_length:
+        data_x,data_t,train_indices,test_indices = split_signals(data_x,data_t,train_rate,600)
+    else:
+        train_indices = None
+        test_indices = None
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     if model_type == "classification":
         data_t = categorize_dataset_for_classification(data_t)
-    return data_x,data_t
+    return data_x,data_t,train_indices,test_indices
 
 
 if __name__ == "__main__":
