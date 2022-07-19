@@ -16,18 +16,22 @@ def get_data(driver,element,names,save_dir):
         num = xpath.split("/")[-2]
         print(num)
         if num in names: #患者番号に該当したら
-            print("---")
-            num_dat = num + "_0001.dat"
-            num_hea = num + "_0001.hea"
             file_element.click()
-            print("--------------")
-            try:
-                link_dat = driver.find_element_by_link_text(num_dat).get_attribute("href")
-                urllib.request.urlretrieve(link_dat,save_dir+"/"+num_dat) #heaファイルダウンロード
-                link_hea = driver.find_element_by_link_text(num_hea).get_attribute("href")
-                urllib.request.urlretrieve(link_hea,save_dir+"/"+num_hea) #heaファイルダウンロード
-            except:
-                pass
+            for i in range(5):
+                print("---")
+                num_dat = num +"_000"+str(i)+ ".dat"
+                num_hea = num + ".hea"
+                
+                time.sleep(0.5)
+                print("--------------")
+                try:
+                    link_dat = driver.find_element_by_link_text(num_dat).get_attribute("href")
+                    urllib.request.urlretrieve(link_dat,save_dir+"/"+num_dat) #heaファイルダウンロード
+                    time.sleep(0.5)
+                    link_hea = driver.find_element_by_link_text(num_hea).get_attribute("href")
+                    urllib.request.urlretrieve(link_hea,save_dir+"/"+num_hea) #heaファイルダウンロード
+                except:
+                    pass
             driver.back() #前の画面に戻る
 
 
