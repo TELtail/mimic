@@ -12,6 +12,7 @@ from sklearn.model_selection import train_test_split
 import copy
 import pandas as pd
 import matplotlib.pyplot as plt
+import csv
 
 
 def mk_data_pickle(dataset_path):
@@ -165,11 +166,14 @@ def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num
 
 
 def delete_from_pickle_to_dataframe(data_pickle_path):
-    with open(data_pickle_path,"rb") as f:
-        detailed_data = pickle.load(f) #信号データ
-    
+    print(data_pickle_path)
+    if ".csv" in data_pickle_path:
+        detailed_data = mk_data_if_dont_have_data_bin(data_pickle_path)
+    elif ".bin" in data_pickle_path:
+        with open(data_pickle_path,"rb") as f:
+            detailed_data = pickle.load(f) #信号データ
     signal_dataframes = {}
-
+    print(detailed_data)
     for signal_name,one_data in detailed_data.items():
         one_signals = pd.DataFrame(one_data[0],columns=one_data[1]["sig_name"])
         signal_dataframes[signal_name] = one_signals
@@ -177,6 +181,17 @@ def delete_from_pickle_to_dataframe(data_pickle_path):
     
     return signal_dataframes
 
+def mk_data_if_dont_have_data_bin(csv_path):
+    data = {}
+    with open(csv_path,"r") as f:
+        paths = csv.reader(f)
+        for p in paths:
+            p = p[0].split(".dat")[0]
+            signals,fields = wfdb.rdsamp(p)
+            name = os.path.basename(p)
+            data[name] = [signals,fields]
+    
+    return data
 
 class Convert_Delete_signal_dataframes:
     def __init__(self,signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length):
@@ -324,6 +339,7 @@ def split_signals(data_x,data_t,train_rate,splited_one_signal_length): #信号�
 def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type,train_rate,splited_one_signal_length):
     
     signal_dataframes = delete_from_pickle_to_dataframe(data_pickle_path)
+    print(signal_dataframes)
     convert_cl = Convert_Delete_signal_dataframes(signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length)
     convert_cl.run()
 
@@ -341,6 +357,3 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
         data_t = categorize_dataset_for_classification(data_t)
     return data_x,data_t,train_indices,test_indices
 
-
-if __name__ == "__main__":
-    mk_dataset_v2("../data/data.bin","../data/age_data.json",["HR","RESP"],300,1500)
