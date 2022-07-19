@@ -166,14 +166,12 @@ def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num
 
 
 def delete_from_pickle_to_dataframe(data_pickle_path):
-    print(data_pickle_path)
     if ".csv" in data_pickle_path:
         detailed_data = mk_data_if_dont_have_data_bin(data_pickle_path)
     elif ".bin" in data_pickle_path:
         with open(data_pickle_path,"rb") as f:
             detailed_data = pickle.load(f) #信号データ
     signal_dataframes = {}
-    print(detailed_data)
     for signal_name,one_data in detailed_data.items():
         one_signals = pd.DataFrame(one_data[0],columns=one_data[1]["sig_name"])
         signal_dataframes[signal_name] = one_signals
@@ -264,8 +262,6 @@ class Convert_Delete_signal_dataframes:
                     continue_times+=1
                 continue_indexes.append([indexes[i][0],continue_times])
                 i+=continue_times
-            print(continue_indexes)
-            
 
 
 
@@ -339,7 +335,6 @@ def split_signals(data_x,data_t,train_rate,splited_one_signal_length): #信号�
 def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type,train_rate,splited_one_signal_length):
     
     signal_dataframes = delete_from_pickle_to_dataframe(data_pickle_path)
-    print(signal_dataframes)
     convert_cl = Convert_Delete_signal_dataframes(signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length)
     convert_cl.run()
 
