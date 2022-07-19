@@ -168,7 +168,9 @@ def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num
 def delete_from_pickle_to_dataframe(data_pickle_path):
     if ".csv" in data_pickle_path:
         detailed_data = mk_data_if_dont_have_data_bin(data_pickle_path)
+        flag = "row"
     elif ".bin" in data_pickle_path:
+        flag = "analysis"
         with open(data_pickle_path,"rb") as f:
             detailed_data = pickle.load(f) #信号データ
     signal_dataframes = {}
@@ -177,7 +179,7 @@ def delete_from_pickle_to_dataframe(data_pickle_path):
         signal_dataframes[signal_name] = one_signals
 
     
-    return signal_dataframes
+    return signal_dataframes,flag
 
 def mk_data_if_dont_have_data_bin(csv_path):
     data = {}
@@ -204,8 +206,22 @@ class Convert_Delete_signal_dataframes:
         self.delete_signal_names["not_have_need_element_at_least"] = []
 
         for signal_name,signal in self.signals.items():
-            if set(["HR","RESP","SpO2"]) <=  set(list(signal.columns)): #指定要素を含むかどうか
-                deleteed_signals[signal_name] = signal[["HR","RESP","SpO2"]] #指定要素のみ抽出
+            if set(self.need_elements_list) <=  set(list(signal.columns)): #指定要素を含むかどうか
+                deleteed_signals[signal_name] = signal[self.need_elements_list] #指定要素のみ抽出
+            else:
+                self.delete_signal_names["not_have_need_element_at_least"].append(signal_name) #削除した信号番号を保持
+                del deleteed_signals[signal_name] #指定要素を持たない信号を削除
+        
+        self.signals = deleteed_signals
+    
+    def delete_signal_not_have_need_any_element(self):
+        deleteed_signals = copy.copy(self.signals) #一次的に変換後の信号を入れておくdf
+        self.delete_signal_names["not_have_need_element_at_least"] = []
+
+        for signal_name,signal in self.signals.items():
+            exist_elements_list = [i for i in signal.columns if i in self.need_elements_list] #指定要素名を取得
+            if len(exist_elements_list) != 0: #指定要素を一つでも含んでいれば
+                deleteed_signals[signal_name] = signal[exist_elements_list] #指定要素のみ抽出
             else:
                 self.delete_signal_names["not_have_need_element_at_least"].append(signal_name) #削除した信号番号を保持
                 del deleteed_signals[signal_name] #指定要素を持たない信号を削除
@@ -262,23 +278,25 @@ class Convert_Delete_signal_dataframes:
                     continue_times+=1
                 continue_indexes.append([indexes[i][0],continue_times])
                 i+=continue_times
-
-
-
-
-
-
     
     def extract_need_elements_from_signals(self):
         for signal_name,signal in self.signals.items():
             self.signals[signal_name] = signal[self.need_elements_list]
     
+    def select_hr_signal(self):
+        for signal_name,signal in self.signals.items():
+            exist_elements_list = [i for i in signal.columns if i in self.need_elements_list] #指定要素名を取得
+            self.signals[signal_name] = signal[exist_elements_list[-1]]
+    
     def shorten_long_signals(self):
         for signal_name,signal in self.signals.items():
-            self.signals[signal_name] = signal.iloc[:self.maximum_signal_length,:]
+            if type(signal) == pd.core.frame.DataFrame:
+                self.signals[signal_name] = signal.iloc[:self.maximum_signal_length,:]
+            elif type(signal) == pd.core.series.Series:
+                self.signals[signal_name] = signal.iloc[:self.maximum_signal_length]
     
 
-    def run(self):
+    def run_for_analysis(self):
         self.delete_signal_not_have_need_element_at_least()
         self.delete_signal_too_many_zero()
         self.delete_signal_too_short()
@@ -286,6 +304,13 @@ class Convert_Delete_signal_dataframes:
         #self.segmentating_signals_that_zero_continous_for_a_long_time()
         self.convert_nan_to_ffill()
         self.extract_need_elements_from_signals()
+        self.shorten_long_signals()
+    
+    def run_for_row(self):
+        self.delete_signal_not_have_need_any_element()
+        self.delete_signal_too_short()
+        self.convert_nan_to_ffill()
+        self.select_hr_signal()
         self.shorten_long_signals()
 
 def associate_age_signals(signals,age_map,splited_one_signal_length):
@@ -297,7 +322,11 @@ def associate_age_signals(signals,age_map,splited_one_signal_length):
             data_x.append(np.array(sig.values))
         else:
             data_x.append(torch.tensor(sig.values,dtype=torch.float32))
-        data_t.append([age_map["data"][sig_name]["age"]])
+        if "n" in sig_name:
+            data_t.append([age_map["data"][sig_name]["age"]])
+        else:
+            sig_name = sig_name.split("_")[0] + "n"
+            data_t.append([age_map["data"][sig_name]["age"]])
     return data_x,data_t
 
 def categorize_dataset_for_classification(data_t):
@@ -334,9 +363,12 @@ def split_signals(data_x,data_t,train_rate,splited_one_signal_length): #信号�
 
 def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type,train_rate,splited_one_signal_length):
     
-    signal_dataframes = delete_from_pickle_to_dataframe(data_pickle_path)
+    signal_dataframes,row_analysis_flag = delete_from_pickle_to_dataframe(data_pickle_path)
     convert_cl = Convert_Delete_signal_dataframes(signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length)
-    convert_cl.run()
+    if row_analysis_flag == "row":
+        convert_cl.run_for_row()
+    elif row_analysis_flag == "analysis":
+        convert_cl.run_for_analysis()
 
     with open(age_json_path,"r") as g:
         age_map = json.load(g) #年齢の対応データ
@@ -346,9 +378,13 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
     else:
         train_indices = None
         test_indices = None
+    
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
+    if len(data_x.shape) == 2:
+        data_x = data_x.unsqueeze(dim=2)
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     if model_type == "classification":
         data_t = categorize_dataset_for_classification(data_t)
+
     return data_x,data_t,train_indices,test_indices
 

@@ -37,7 +37,7 @@ def main_method():
     logger.info("train:{} test:{}".format(len(trainloader.dataset),len(testloader.dataset)))
     out_dim,loss_fn = determing_setting(model_type) #モデルタイプに対応したモデルの出力次元と損失関数を決定 
     loss_fn = loss_fn.to(device)
-    num_axis = len(args.need_elements_list) #入力次元数を決定
+    num_axis = data_x.shape[-1] #入力次元数を決定
     net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,out_dim).to(device) #指定されたモデルを呼び出し
     logger.info(net) #モデル情報出力
 
