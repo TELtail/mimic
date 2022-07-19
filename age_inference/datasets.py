@@ -168,9 +168,7 @@ def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num
 def delete_from_pickle_to_dataframe(data_pickle_path):
     if ".csv" in data_pickle_path:
         detailed_data = mk_data_if_dont_have_data_bin(data_pickle_path)
-        flag = "row"
     elif ".bin" in data_pickle_path:
-        flag = "analysis"
         with open(data_pickle_path,"rb") as f:
             detailed_data = pickle.load(f) #信号データ
     signal_dataframes = {}
@@ -179,7 +177,7 @@ def delete_from_pickle_to_dataframe(data_pickle_path):
         signal_dataframes[signal_name] = one_signals
 
     
-    return signal_dataframes,flag
+    return signal_dataframes
 
 def mk_data_if_dont_have_data_bin(csv_path):
     data = {}
@@ -298,7 +296,7 @@ class Convert_Delete_signal_dataframes:
                 self.signals[signal_name] = signal.iloc[:self.maximum_signal_length]
     
 
-    def run_for_analysis(self):
+    def run_using_all_elements(self):
         self.delete_signal_not_have_need_element_at_least()
         self.delete_signal_too_many_zero()
         self.delete_signal_too_short()
@@ -308,7 +306,7 @@ class Convert_Delete_signal_dataframes:
         self.extract_need_elements_from_signals()
         self.shorten_long_signals()
     
-    def run_for_row(self):
+    def run_using_some_elements(self):
         self.delete_signal_not_have_need_any_element()
         self.delete_signal_too_short()
         self.convert_nan_to_ffill()
@@ -363,14 +361,14 @@ def split_signals(data_x,data_t,train_rate,splited_one_signal_length): #信号�
     return new_data_x,new_data_t,new_train_indices,new_test_indices
 
 
-def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type,train_rate,splited_one_signal_length):
+def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path,model_type,train_rate,splited_one_signal_length,use_not_all_elements):
     
-    signal_dataframes,row_analysis_flag = delete_from_pickle_to_dataframe(data_pickle_path)
+    signal_dataframes = delete_from_pickle_to_dataframe(data_pickle_path)
     convert_cl = Convert_Delete_signal_dataframes(signal_dataframes,need_elements_list,minimum_signal_length,maximum_signal_length)
-    if row_analysis_flag == "row":
-        convert_cl.run_for_row()
-    elif row_analysis_flag == "analysis":
-        convert_cl.run_for_analysis()
+    if use_not_all_elements == True:
+        convert_cl.run_using_some_elements()
+    else:
+        convert_cl.run_using_all_elements()
 
     with open(age_json_path,"r") as g:
         age_map = json.load(g) #年齢の対応データ

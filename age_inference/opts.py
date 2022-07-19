@@ -22,6 +22,7 @@ def get_parser():
     parser.add_argument("--model_name",help="使用するモデル名を指定",default="Lstm_regression_net",choices=["Lstm_regression_net","Lstm_classification_net","Conv1D_regression_net","Conv1D_classification_net","Linear_regression_net","Linear_classification_net"])
     parser.add_argument("--debug_flag",help="デバッグ中を示す。結果の保存を行わない",action="store_true")
     parser.add_argument("--splited_one_signal_length",help="分割処理をする際にどれくらいの長さにするか",default=None)
+    parser.add_argument("--use_not_all_elements",help="need_elementsで指定した要素を全て使うかどうか",action="store_true")
 
     args = parser.parse_args()
 
@@ -43,6 +44,7 @@ def print_parser(args):
     logger.info("minimum_signal_length:{}".format(args.minimum_signal_length))
     logger.info("maximum_signal_length:{}".format(args.maximum_signal_length))
     logger.info("need_elements_list:{}".format(args.need_elements_list))
+    logger.info("use_not_all_elements:{}".format(args.use_not_all_elements))
     logger.info("print_result_flag:{}".format(args.print_result_flag))
     logger.info("model_name:{}".format(args.model_name))
     logger.info("splited_one_signal_length:{}".format(args.splited_one_signal_length))
