@@ -186,10 +186,12 @@ def mk_data_if_dont_have_data_bin(csv_path):
     with open(csv_path,"r") as f:
         paths = csv.reader(f)
         for p in paths:
-            p = p[0].split(".dat")[0]
-            signals,fields = wfdb.rdsamp(p)
-            name = os.path.basename(p)
-            data[name] = [signals,fields]
+            p = p[0]
+            dir_name = os.path.dirname(p)
+            base_name = os.path.basename(p).split(".")[0]
+
+            signals,fields = wfdb.rdsamp(os.path.join(dir_name,base_name))
+            data[base_name] = [signals,fields]
     
     return data
 
