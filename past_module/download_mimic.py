@@ -21,12 +21,13 @@ def get_data(driver,element,names,save_dir):
             for ele in a_elments:
                 file_xpath_str = ele.get_attribute("href")
                 target_file_name = os.path.basename(file_xpath_str)
-                print(ele)
                 print(target_file_name)
-                if ".dat" in target_file_name:
-                    urllib.request.urlretrieve(ele,save_dir+"/"+target_file_name) #datファイルダウンロード
-                if ".hed" in target_file_name:
-                    urllib.request.urlretrieve(ele,save_dir+"/"+target_file_name) #heaファイルダウンロード
+                if ".dat" in target_file_name and "_" in target_file_name:
+                    urllib.request.urlretrieve(file_xpath_str,save_dir+"/"+target_file_name) #datファイルダウンロード
+                    time.sleep(0.5)
+                if ".hea" in target_file_name and "_" in target_file_name:
+                    urllib.request.urlretrieve(file_xpath_str,save_dir+"/"+target_file_name) #heaファイルダウンロード
+                    time.sleep(0.5)
             driver.back() #前の画面に戻る
 
 
@@ -35,7 +36,7 @@ def scraping(names,save_dir):
     options = webdriver.ChromeOptions()
     options.add_experimental_option("prefs", {"download.default_directory":os.getcwd()+ save_dir }) #ダウンロード先を変更
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
-    options.add_argument("--headless")
+    #options.add_argument("--headless")
     options.use_chromium = True
 
     driver = webdriver.Chrome(executable_path='../driver/chromedriver.exe',chrome_options=options)
