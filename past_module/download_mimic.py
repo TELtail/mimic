@@ -17,21 +17,16 @@ def get_data(driver,element,names,save_dir):
         print(num)
         if num in names: #患者番号に該当したら
             file_element.click()
-            for i in range(5):
-                print("---")
-                num_dat = num +"_000"+str(i)+ ".dat"
-                num_hea = num + ".hea"
-                
-                time.sleep(0.5)
-                print("--------------")
-                try:
-                    link_dat = driver.find_element_by_link_text(num_dat).get_attribute("href")
-                    urllib.request.urlretrieve(link_dat,save_dir+"/"+num_dat) #heaファイルダウンロード
-                    time.sleep(0.5)
-                    link_hea = driver.find_element_by_link_text(num_hea).get_attribute("href")
-                    urllib.request.urlretrieve(link_hea,save_dir+"/"+num_hea) #heaファイルダウンロード
-                except:
-                    pass
+            a_elments = driver.find_elements_by_xpath("/html/body/pre/a")
+            for ele in a_elments:
+                file_xpath_str = ele.get_attribute("href")
+                target_file_name = os.path.basename(file_xpath_str)
+                print(ele)
+                print(target_file_name)
+                if ".dat" in target_file_name:
+                    urllib.request.urlretrieve(ele,save_dir+"/"+target_file_name) #datファイルダウンロード
+                if ".hed" in target_file_name:
+                    urllib.request.urlretrieve(ele,save_dir+"/"+target_file_name) #heaファイルダウンロード
             driver.back() #前の画面に戻る
 
 
@@ -40,6 +35,7 @@ def scraping(names,save_dir):
     options = webdriver.ChromeOptions()
     options.add_experimental_option("prefs", {"download.default_directory":os.getcwd()+ save_dir }) #ダウンロード先を変更
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
+    options.add_argument("--headless")
     options.use_chromium = True
 
     driver = webdriver.Chrome(executable_path='../driver/chromedriver.exe',chrome_options=options)
