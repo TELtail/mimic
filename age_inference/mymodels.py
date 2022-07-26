@@ -37,7 +37,7 @@ class Conv1D_regression_net(nn.Module):
         self.conv1 = nn.Conv1d(sig_length,hidden_dim,kernel_size=num_axis,stride=1)
         self.relu = nn.ReLU()
         self.fc = nn.Linear(hidden_dim,out_dim)
-        self.dropout = nn.Dropout(0.25)
+        self.dropout = nn.Dropout(0.1)
 
         
     def forward(self,x):
