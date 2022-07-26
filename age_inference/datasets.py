@@ -339,6 +339,27 @@ def categorize_dataset_for_classification(data_t):
     
     return data_t
 
+def categorize_dataset_for_classification_center_near_deletion(data_x,data_t):
+
+    min = torch.min(data_t[:,0])
+    med = torch.median(data_t[:,0])
+    max = torch.median(data_t[:,0])
+    down_con,up_con = data_t<(min+med)/2, (max+med)/2<data_t
+
+    new_data_x = []
+
+    for i in range(len(data_x)):
+        if down_con[i] or up_con[i]:
+            new_data_x.append(data_x[i].tolist())
+
+    new_data_x = torch.tensor(new_data_x)
+    new_data_t = torch.cat((data_t[down_con],data_t[up_con]),0)
+    new_data_t[new_data_t<(min+med)/2] = 0
+    new_data_t[(max+med)/2<new_data_t] = 1
+    
+    return new_data_x,new_data_t
+
+
 def split_signals(data_x,data_t,train_rate,splited_one_signal_length): #信号分割を行う
     train_indices,test_indices = train_test_split(list(range(len(data_t))),train_size=train_rate,random_state=SEED) #学習データとテストデータを分割
     new_data_x = []
@@ -384,7 +405,8 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
         data_x = data_x.unsqueeze(dim=2)
     data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
     if model_type == "classification":
-        data_t = categorize_dataset_for_classification(data_t)
+        #data_t = categorize_dataset_for_classification(data_t)
+        data_x,data_t = categorize_dataset_for_classification_center_near_deletion(data_x,data_t)
 
     return data_x,data_t,train_indices,test_indices
 
