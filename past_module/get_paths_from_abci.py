@@ -2,8 +2,8 @@ import os
 import glob
 import csv
 
-dir_path = "/groups/gab50262/volunteerdata_2/volunteerdata/2019*/wfdb_data/*bed_data.bin"
-out_path = "../data/paths_abci_bed.csv"
+dir_path = "../data/mimic_raw_mini/*/*/*.dat"
+out_path = "../data/paths_abci.csv"
 
 paths = glob.glob(dir_path)
 print(paths)

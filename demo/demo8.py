@@ -11,7 +11,7 @@ with open(csv_path,"r") as f:
         sig_name = name[0].split("_")[0]
         dat_name = sig_name[:2] +"/"+ sig_name +"/"+ name[0]
         all_paths.append(dat_name)
-        #print(dat_name)
+        print(dat_name)
 
 #wfdb.dl_files("mimic3wdb","../data/tmp",all_paths[:2])
 #wfdb.dl_database('mimic3wdb',"../data/tmp",records=all_paths[:1] )
