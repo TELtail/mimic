@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 import numpy as np
 import shutil
-from logging import getLogger,config
+from logging import *
 import logging
-from common_utils import mk_out_dir,select_model,set_log_settings,define_seed,log_start,determing_setting
-from opts import print_parser,get_parser
-from datasets import mk_dataset,get_loader,mk_dataset_v2,mk_data_if_dont_have_data_bin
-from plot_glaph import plot_loss_glaph,plot_regression_inference_result,plot_classification_correct_result
-from train_test_loop_method import test_regression_method,train_regression_method,train_classification_method,test_classification_method
+from common_utils import *
+from opts import *
+from datasets import *
+from plot_glaph import *
+from train_test_loop_method import *
 
 
 

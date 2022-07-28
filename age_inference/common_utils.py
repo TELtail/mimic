@@ -64,7 +64,7 @@ def determing_setting(model_type):
         out_dim = 1
         loss_fn = nn.MSELoss()
     elif model_type == "classification":
-        out_dim = 2
-        loss_fn = nn.CrossEntropyLoss()
+        out_dim = 1
+        loss_fn = nn.BCELoss()
     
     return out_dim,loss_fn

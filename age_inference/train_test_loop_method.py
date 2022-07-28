@@ -57,9 +57,12 @@ def train_classification_method(trainloader,net,optimizer,loss_fn,device,batch_s
         inputs,labels = inputs.to(device),labels.to(device)
         outputs = net(inputs)
         labels = torch.flatten(labels)
+        outputs = torch.flatten(outputs)
+        print(outputs)
         loss = loss_fn(outputs,labels)
         running_loss += loss.item()
-        correct += (outputs.argmax(1)==labels).sum().item()
+        predicted = torch.where(outputs<0.5,0,1)
+        correct += (predicted==labels).sum().item()
         loss.backward()
         optimizer.step()
         if i%10 == 0:
@@ -81,13 +84,11 @@ def test_classification_method(testloader,net,loss_fn,device,print_result_flag):
         inputs,labels = inputs.to(device),labels.to(device)
         outputs = net(inputs)
         labels = torch.flatten(labels)
-        if print_result_flag:
-            logger.info(outputs)
+        outputs = torch.flatten(outputs)
         loss = loss_fn(outputs,labels)
-        outputs_np = outputs.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
-        labels_np = labels.to('cpu').detach().numpy().copy().flatten()[0] #プロット用に、ndarray → 一次元化
         running_loss += loss.item()
-        correct += (outputs.argmax(1)==labels).sum().item()
+        predicted = torch.where(outputs<0.5,0,1)
+        correct += (predicted==labels).sum().item()
     correct /= size
     running_loss /= (i+1)
     logger.info(f"test_loss:{running_loss}")

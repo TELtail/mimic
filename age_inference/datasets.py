@@ -14,93 +14,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import csv
 
-
-def mk_data_pickle(dataset_path):
-    data = {}
-
-    file_paths = glob.glob(dataset_path+"/*.hea")
-    for path in file_paths:
-        name = os.path.basename(path).split(".")[0]
-        signals,fields = wfdb.rdsamp(path.split(".")[0])
-        data[name] = [signals,fields]
-    
-    with open("data.bin","wb") as f:
-        pickle.dump(data,f)
-
-def merging_data(data,age_map,need_elements_list):
-    data_not_have_feature = {} #削除したデータをカウントするための辞書
-    data_not_have_feature["not_have_need_feature"] = [] #必要な要素（特徴）を持っていなかった要素用
-    merged_data = {} #信号と年齢データをくっつけた辞書
-    for key,value in data.items():
-        merged_data[key] = {}
-        merged_data[key]["age"] = age_map["data"][key]["age"]
-        merged_data[key]["signals"] = value[0]
-        merged_data[key]["fields"] = value[1]
-        if len(list(set(merged_data[key]["fields"]["sig_name"]) & set(need_elements_list))) != len(need_elements_list): #必要な要素を持っていなかったらデータ削除
-            data_not_have_feature["not_have_need_feature"].append([key,age_map["data"][key]["patient_number"]]) #使用しなかったデータの信号番号と患者番号を取得
-            del merged_data[key] #必要な要素（特徴）を持っていなかった要素を削除
-    
-    return merged_data,data_not_have_feature
-
-def extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_feature,minimum_signal_length):
-    data_signlas_age = {} #信号と年齢データをくっつけた辞書
-    data_not_have_feature["too_short"] = [] #データが短すぎた用
-    for key,one_data in merged_data.items():
-        indexs = [] #必要な要素のあるインデックスを格納するリスト
-        if np.array(one_data["signals"]).shape[0] < minimum_signal_length: #短すぎるデータは削除
-            data_not_have_feature["too_short"].append([key,age_map["data"][key]["patient_number"]])
-            continue
-        for element in need_elements_list:
-            indexs.append(one_data["fields"]["sig_name"].index(element)) #必要なindexを取得
-        data_signlas_age[key] = {}
-        data_signlas_age[key]["signals"] = one_data["signals"][:,indexs] #必要な信号を抽出
-        data_signlas_age[key]["age"] = merged_data[key]["age"]
-
-    return data_signlas_age,data_not_have_feature
-
-def nan_data_delete(data_signals_age,age_map,data_not_have_feature):
-    data_signals_age_zero_delete = copy.copy(data_signals_age) #戻り値
-    data_not_have_feature["too_many_zero"] = [] #削除したデータのカウント用
-
-    for key,one_data in data_signals_age.items():
-        zero_num = np.sum(data_signals_age[key]["signals"]==0,axis=0) #ゼロの数を軸ごとに計算
-        if max(zero_num)/len(data_signals_age[key]["signals"]) > 0.05: #ゼロ率が高い信号を削除
-            data_not_have_feature["too_many_zero"].append([key,age_map["data"][key]["patient_number"]]) #削除したデータのカウント用
-            del data_signals_age_zero_delete[key] #削除実行
-    return data_signals_age_zero_delete,data_not_have_feature
-
-def mk_dataset(data_pickle_path,age_json_path,need_elements_list,minimum_signal_length,maximum_signal_length,out_path):
-
-
-    with open(data_pickle_path,"rb") as f:
-        data = pickle.load(f) #信号データ
-    with open(age_json_path,"r") as g:
-        age_map = json.load(g) #年齢の対応データ
-    
-    merged_data,data_not_have_feature = merging_data(data,age_map,need_elements_list) #信号と年齢データを対応付ける
-    data_signals_age,data_not_have_feature = extractioning_signals(merged_data,age_map,need_elements_list,data_not_have_feature,minimum_signal_length) #必要なデータだけ取得
-    data_signals_age_zero_delete,data_not_have_feature = nan_data_delete(data_signals_age,age_map,data_not_have_feature) #0が多すぎるデータの削除
-    
-    delete_data_info(out_path,data_not_have_feature,age_map,len(data),len(data_signals_age_zero_delete)) #使用しなかったデータを集計してjsonファイルに出力する
-
-    data_x = [] #信号
-    data_t = [] #年齢(ラベル)
-
-    for key,one_data in data_signals_age_zero_delete.items():
-        
-        tmp = np.array(one_data["signals"],dtype=np.float32)[:maximum_signal_length] #ndarrayへの変更、指定された長さで削除
-        convert_signal = Convert_signal(tmp)
-        tmp = convert_signal.zero_to_nan_to_medi() 
-
-        tmp = torch.tensor(tmp) 
-        data_x.append(tmp)
-        data_t.append([one_data["age"]])
-    
-    plot_age_histogram(data_t,out_path)
-    data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
-    data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
-    return data_x,data_t
-
 def get_loader(data_x,data_t,train_rate,batch_size,train_indices,test_indices):
     #input data_x (tensor)
     #      data_t (tensor)
@@ -115,54 +28,6 @@ def get_loader(data_x,data_t,train_rate,batch_size,train_indices,test_indices):
     testloader  = torch.utils.data.DataLoader(testdataset,batch_size=1)
 
     return trainloader,testloader
-
-class Convert_signal:
-    def __init__(self,signal):
-        self.signal = signal
-        self.ave = np.nanmean(self.signal,axis=0)
-        self.medi = np.nanmedian(self.signal,axis=0)
-    
-    def nan_to_ave(self):
-        no_nan_signal = np.nan_to_num(self.signal,nan=self.ave)
-        return no_nan_signal 
-    
-    def nan_to_medi(self):
-        no_nan_signal = np.nan_to_num(self.signal,nan=self.medi)
-        return no_nan_signal 
-
-    def zero_to_nan_to_ave(self):
-        self.signal[self.signal==0] = np.nan
-        converted_signal = self.nan_to_ave()
-        return converted_signal
-    
-    def zero_to_nan_to_medi(self):
-        self.signal[self.signal==0] = np.nan
-        converted_signal = self.nan_to_medi()
-        return converted_signal
-    
-    def outlier_to_nan_to_ave(self):
-        pass
-
-
-
-def delete_data_info(out_path,data_not_have_feature,age_map,before_num,after_num):
-    delete_data_json_path = os.path.join(out_path,"delete_data_info.json")
-
-    delete_data = {} 
-    delete_data["total"] = {"before":before_num,"after":after_num}
-    delete_data["correction"] = age_map["info"]
-    delete_data["delete"] = {}
-
-    for key,value in data_not_have_feature.items():
-        value = np.array(value)
-        tmp = value[:,1] #患者番号だけを抜き出し
-        tmp = set(tmp) #重複要素削除
-
-        delete_data["delete"][key] = {"signal_number":len(value),"patient_number":len(tmp)}
-
-    with open(delete_data_json_path,"w") as f:
-        json.dump(delete_data,f,indent=4)
-
 
 
 def delete_from_pickle_to_dataframe(data_pickle_path):
@@ -341,10 +206,9 @@ def categorize_dataset_for_classification(data_t):
 
 def categorize_dataset_for_classification_center_near_deletion(data_x,data_t):
 
-    min = torch.min(data_t[:,0])
-    med = torch.median(data_t[:,0])
-    max = torch.median(data_t[:,0])
-    down_con,up_con = data_t<(min+med)/2, (max+med)/2<data_t
+    small_line = torch.quantile(data_t,0.25,interpolation="nearest").item()
+    big_line = torch.quantile(data_t,0.75,interpolation="nearest").item()
+    down_con,up_con = data_t<small_line, big_line<data_t
 
     new_data_x = []
 
@@ -354,9 +218,8 @@ def categorize_dataset_for_classification_center_near_deletion(data_x,data_t):
 
     new_data_x = torch.tensor(new_data_x)
     new_data_t = torch.cat((data_t[down_con],data_t[up_con]),0)
-    new_data_t[new_data_t<(min+med)/2] = 0
-    new_data_t[(max+med)/2<new_data_t] = 1
-    
+    new_data_t[new_data_t<small_line] = 0
+    new_data_t[big_line<new_data_t] = 1
     return new_data_x,new_data_t
 
 
@@ -403,7 +266,7 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
     data_x = nn.utils.rnn.pad_sequence(data_x,batch_first=True) #足りないデータはゼロ埋め
     if len(data_x.shape) == 2:
         data_x = data_x.unsqueeze(dim=2)
-    data_t = torch.tensor(np.array(data_t),dtype=torch.int64)
+    data_t = torch.tensor(np.array(data_t),dtype=torch.float32)
     if model_type == "classification":
         #data_t = categorize_dataset_for_classification(data_t)
         data_x,data_t = categorize_dataset_for_classification_center_near_deletion(data_x,data_t)
