@@ -58,7 +58,6 @@ def train_classification_method(trainloader,net,optimizer,loss_fn,device,batch_s
         outputs = net(inputs)
         labels = torch.flatten(labels)
         outputs = torch.flatten(outputs)
-        print(outputs)
         loss = loss_fn(outputs,labels)
         running_loss += loss.item()
         predicted = torch.where(outputs<0.5,0,1)
