@@ -31,33 +31,37 @@ class Lstm_classification_net(nn.Module):
         return x
 
 class Conv1D_regression_net(nn.Module):
-    def __init__(self,num_axis,hidden_dim,sig_length,out_dim):
+    def __init__(self,num_axis,hidden_dim,sig_length,out_dim,kernel_size=250):
         super(Conv1D_regression_net,self).__init__()
         self.hidden_dim = hidden_dim
-        self.conv1 = nn.Conv1d(sig_length,hidden_dim,kernel_size=num_axis,stride=1)
+        self.kernel_size = kernel_size
+        self.conv1 = nn.Conv1d(num_axis,hidden_dim,kernel_size=kernel_size)
         self.relu = nn.ReLU()
-        self.fc = nn.Linear(hidden_dim,out_dim)
+        self.fc_dim = (sig_length - (kernel_size-1) - 1 + 1) * hidden_dim
+        self.fc = nn.Linear(self.fc_dim,out_dim)
 
         
     def forward(self,x):
         x = self.relu(self.conv1(x))
-        x = x.view(-1,self.hidden_dim)
+        x = x.view(x.size(0),-1)
         x = self.fc(x)
         return x
 
 class Conv1D_classification_net(nn.Module):
-    def __init__(self,num_axis,hidden_dim,sig_length,out_dim):
+    def __init__(self,num_axis,hidden_dim,sig_length,out_dim,kernel_size=250):
         super(Conv1D_classification_net,self).__init__()
         self.hidden_dim = hidden_dim
-        self.conv1 = nn.Conv1d(sig_length,hidden_dim,kernel_size=num_axis,stride=1)
+        self.kernel_size = kernel_size
+        self.conv1 = nn.Conv1d(num_axis,hidden_dim,kernel_size=kernel_size)
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
-        self.fc = nn.Linear(hidden_dim,out_dim)
+        self.fc_dim = (sig_length - (kernel_size-1) - 1 + 1) * hidden_dim
+        self.fc = nn.Linear(self.fc_dim,out_dim)
 
         
     def forward(self,x):
         x = self.relu(self.conv1(x))
-        x = x.view(-1,self.hidden_dim)
+        x = x.view(x.size(0),-1)
         x = self.fc(x)
         x = self.sigmoid(x)
         return x

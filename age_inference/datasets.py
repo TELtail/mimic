@@ -270,6 +270,8 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
     if model_type == "classification":
         #data_t = categorize_dataset_for_classification(data_t)
         data_x,data_t = categorize_dataset_for_classification_center_near_deletion(data_x,data_t)
-
-    return data_x,data_t,train_indices,test_indices
+    
+    num_axis = data_x.shape[-1]
+    
+    return data_x,data_t,train_indices,test_indices,num_axis
 
