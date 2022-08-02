@@ -258,7 +258,7 @@ def mk_dataset_v2(data_pickle_path,age_json_path,need_elements_list,minimum_sign
         age_map = json.load(g) #年齢の対応データ
     data_x,data_t = associate_age_signals(convert_cl.signals,age_map,splited_one_signal_length)
     if splited_one_signal_length:
-        data_x,data_t,train_indices,test_indices = split_signals(data_x,data_t,train_rate,600)
+        data_x,data_t,train_indices,test_indices = split_signals(data_x,data_t,train_rate,splited_one_signal_length)
     else:
         train_indices = None
         test_indices = None

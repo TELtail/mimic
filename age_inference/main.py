@@ -39,7 +39,10 @@ def main_method():
     out_dim,loss_fn = determing_setting(model_type) #モデルタイプに対応したモデルの出力次元と損失関数を決定 
     loss_fn = loss_fn.to(device)
     num_axis = data_x.shape[-1] #入力次元数を決定
-    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,args.maximum_signal_length,out_dim).to(device) #指定されたモデルを呼び出し
+    sig_len = args.maximum_signal_length
+    if args.splited_one_signal_length:
+        sig_len = args.splited_one_signal_length
+    net = select_model(args.model_name,num_axis,args.hidden_dim,args.num_layers,sig_len,out_dim).to(device) #指定されたモデルを呼び出し
     logger.info(net) #モデル情報出力
 
     optimizer = torch.optim.Adam(net.parameters(),lr=args.lr)

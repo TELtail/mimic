@@ -35,7 +35,7 @@ def select_model(model_name,num_axis,hidden_dim,num_layers,sig_length,out_dim):
     if model_name == "Conv1D_classification_net":
         model = Conv1D_classification_net(num_axis,hidden_dim,sig_length,out_dim)
     if model_name == "Linear_regression_net":
-        model = Linear_regression_net(num_axis,hidden_dim,num_layers,sig_length,out_dim)
+        model = Linear_regression_net(num_axis,hidden_dim,sig_length,out_dim)
     if model_name == "Linear_classification_net":
         model = Linear_classification_net(num_axis,hidden_dim,num_layers,sig_length,out_dim)
     
